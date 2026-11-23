@@ -268,6 +268,10 @@ body {
 #workshop {
   grid-area: shop;
 }
+/* the right column's wrapper: outside work hours it is not a box at all, so the workshop takes "shop" alone */
+.shopcol {
+  display: contents;
+}
 #taskpanel {
   grid-area: tasks;
 }
@@ -298,8 +302,16 @@ body.work .skynote {
 /* work hours: the caption and the daylight facts move up right under the scene; the space freed
    below them is #shopspare, the Done this week box (done.py). Outside work hours the workshop is unchanged (the
    caption takes the middle, the facts sit at the bottom, no box). */
+body.work .shopcol {
+  grid-area: shop;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
 body.work #workshop {
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  flex: none;
+  grid-template-rows: auto auto auto auto;
 }
 body.work .caption {
   min-height: 0;
@@ -314,11 +326,10 @@ body.work .skyfacts {
 body.work .shopspare {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
-  margin-top: 8px;
-  padding: 8px 6px 0;
-  border-top: 1px solid var(--line);
+  padding: 14px 24px 12px;
 }
 .donehead {
   flex: none;

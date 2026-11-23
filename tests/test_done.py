@@ -82,14 +82,16 @@ class Merged(unittest.TestCase):
 
 NOTES = """- 2026-11-14 10:00 IN FLIGHT (current):
   F. 09:00 Done: ACME-1: too old, outside the 7 days
-- 2026-11-20 12:00 IN FLIGHT (current):
+- 2026-11-22 10:00 IN FLIGHT (current):
+  F. 09:30 Done: ACME-2: last Sunday, before this week's Monday
+- 2026-11-23 12:00 IN FLIGHT (current):
   W. ACME-9: a waiting line
   F. 11:30 Done: OPS-567: say Done (fix merged, check green)
   F. 11:31 OPS-567: marked Done
   F. 11:40 Done: Essence site: pick a design direction (A, B or C)
 not indented: the block ends
   F. 11:50 Done: never read, outside a block
-- 2026-11-20 12:10 IN FLIGHT (current):
+- 2026-11-23 12:10 IN FLIGHT (current):
   F. 11:30 Done: OPS-567: say Done (fix merged, check green)
   F. 12:05 Done: Essence site: pick the design direction A or B or C
   F. 12:06 Done: see https://evil.example/x `rm -rf` \x1b[31m
@@ -99,11 +101,13 @@ not indented: the block ends
 
 
 class NotesDone(unittest.TestCase):
-    def test_done_lines_of_the_last_7_days_once_each(self):
+    def test_done_lines_of_this_week_once_each(self):
         got = done.notes_done(NOTES.split("\n"), NOW)
         texts = [g["text"] for g in got]
         self.assertEqual(len([t for t in texts if t.startswith("OPS-567: say Done")]), 1)
         self.assertNotIn("ACME-1: too old, outside the 7 days", texts)
+        self.assertNotIn("ACME-2: last Sunday, before this week's Monday", texts)      # the week starts Monday
+        self.assertFalse(any(t.startswith("ACME-5171: draft") for t in texts))          # an answered question
         self.assertFalse(any("marked Done" in t for t in texts))       # only "Done:" lines
         self.assertFalse(any("never read" in t for t in texts))
         self.assertFalse(any("waiting line" in t for t in texts))
@@ -111,7 +115,7 @@ class NotesDone(unittest.TestCase):
         self.assertNotIn("http", bad)
         self.assertNotIn("`", bad)
         self.assertNotIn("\x1b", bad)
-        self.assertEqual(got[-1]["ids"], ["ACME-5171"])
+        self.assertEqual([g["ids"] for g in got if g["text"].startswith("OPS-567")], [["OPS-567"]])
 
     def test_odd_input_never_raises(self):
         self.assertEqual(done.notes_done(None, NOW), [])

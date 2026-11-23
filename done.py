@@ -1,4 +1,5 @@
-"""The "Done this week" box: what was finished in the last 7 days, under the scene in work hours (#shopspare).
+"""The "Done this week" box: what was finished since Monday 00:00 (configured timezone), its own panel under the
+scene in work hours (#shopspare).
 
 Work hours only, the
 task list's own rule (`tasks.shown()`, on the server clock); outside them `/api/done` is `show: false` and nothing
@@ -41,6 +42,24 @@ import tasks
 
 TZ = tasks.TZ
 WINDOW_S = 7 * 86400
+
+
+# "This week" means since Monday 00:00 in the configured timezone, not a rolling 7 days (on a Monday morning a rolling
+# week reads as a huge count). The sources are still fetched for 7 days; the box cuts at the start of the week.
+def week_start(now):
+    """Monday 00:00 (configured timezone) of the week holding `now` (a datetime or epoch seconds), as an aware
+    datetime."""
+    if not isinstance(now, datetime):
+        now = datetime.fromtimestamp(now, tz=timezone.utc)
+    local = now.astimezone(TZ)
+    return (local - timedelta(days=local.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+
+
+def is_question(text):
+    """A finished W line that was a question to you ("...?") is an answer you gave, not work done."""
+    return "?" in (text or "")
+
+
 SHOW = 6                         # the newest items sent; the page shows as many as fit and says "+N more"
 TITLE_MAX = 80
 OVERLAP = 0.6
@@ -187,7 +206,7 @@ def notes_done(lines, now):
     """Notes lines -> [{"ts", "text", "ids"}]: every "F. HH:MM Done: ..." line of every IN FLIGHT block whose header
     is within the last 7 days (and not in the future), once per (time, text). Never raises on odd input."""
     out, seen = [], set()
-    start = now - timedelta(seconds=WINDOW_S)
+    start = week_start(now)
     at = None
     for line in lines or ():
         m = inflight._HEADER.match(line)
@@ -209,7 +228,7 @@ def notes_done(lines, now):
             continue
         raw = _DONE.sub("", rest, count=1)
         text = inflight.clean(raw, 500)
-        if not text:
+        if not text or is_question(text):
             continue
         key = (int(t.timestamp()), text)
         if key in seen:
@@ -374,7 +393,7 @@ class Source:
         with self._lock:
             now = self.now()
             now_ts = int(now.timestamp())
-            start = now_ts - WINDOW_S
+            start = week_start(now_ts).timestamp()
             notes_out = []
             # Linear: completed issues of every workspace that answered with its "done" field
             tickets, lin = [], None

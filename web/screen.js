@@ -1016,4 +1016,11 @@
   setInterval(function () {
     if (lastDone) renderDone(lastDone);
   }, 5000);
+  // and at once when the Done panel changes size (it takes what the workshop above leaves, which changes with the
+  // scene or the caption); its size does not depend on its rows, so no loop
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () {
+      if (lastDone) renderDone(lastDone);
+    }).observe($("shopspare"));
+  }
 })();

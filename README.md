@@ -68,7 +68,7 @@ A PR's check verdict uses the newest run of each check only (keyed by workflow +
 
 ### The right panel
 
-**The grid**: the assistant as a small green figure on a neon floor, a far tower on the horizon. The line to the tower lights while a session is on; a node per configured job (`[scene] nodes`) lights a trace while its systemd unit runs, glows after it ran, and turns red when it failed. Under it a one-line caption and, with `[sky] enabled`, the day's sunrise, sunset, daylight and moon (computed locally). In work hours the space below holds **Done this week**: the real 7-day count of merged PRs, Linear issues completed and "Done:" lines, duplicates merged, the newest rows that fit with "+N more", and "can close" from the automatic waiting rule.
+**The grid**: the assistant as a small green figure on a neon floor, a far tower on the horizon. The line to the tower lights while a session is on; a node per configured job (`[scene] nodes`) lights a trace while its systemd unit runs, glows after it ran, and turns red when it failed. Under it a one-line caption and, with `[sky] enabled`, the day's sunrise, sunset, daylight and moon (computed locally). In work hours a panel below it holds **Done this week**: the real count since Monday 00:00 of merged PRs, Linear issues completed and "Done:" lines (a "Done:" line that is a question, ending in "?", is an answer, not work, and is left out), duplicates merged, the newest rows that fit with "+N more", and "can close" from the automatic waiting rule.
 
 ### Fit and motion
 

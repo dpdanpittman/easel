@@ -70,6 +70,9 @@
           <div id="taskview" class="tview"><ol id="tasklist" class="tasklist"></ol></div>
         </section>
 
+        <!-- the right column: the workshop, and in work hours the Done this week panel under it. Outside work hours
+             this wrapper is display: contents, so the workshop is laid out alone -->
+        <div id="shopcol" class="shopcol">
         <aside id="workshop" class="panel">
           <!-- the scene: the assistant's grid, drawn by grid.js from /api/status (settings `scene`) -->
           <div id="grid" role="img" aria-label="The assistant on the grid" hidden></div>
@@ -91,18 +94,19 @@
             </div>
           </div>
           <div id="skynote" class="skynote"></div>
-          <!-- Done this week (done.py, /api/done): in work hours the caption and the daylight facts sit right under the
-               scene and this box holds the space freed below them; not shown outside work hours.
-               Rows that do not fit are counted in "+N more", never dropped silently. -->
-          <div id="shopspare" class="shopspare">
-            <div class="donehead">
-              <span class="donetitle">Done this week</span><span id="donecount" class="donecount"></span>
-              <span id="donenote" class="donenote"></span>
-            </div>
-            <ol id="donelist" class="donelist"></ol>
-            <div id="donefoot" class="donefoot"></div>
-          </div>
         </aside>
+        <!-- Done this week (done.py, /api/done): in work hours its own panel under the workshop, taking the rest of
+             the column; not shown outside work hours. Rows that do not fit are counted in "+N more", never dropped
+             silently. -->
+        <div id="shopspare" class="shopspare panel">
+          <div class="donehead">
+            <span class="donetitle">Done this week</span><span id="donecount" class="donecount"></span>
+            <span id="donenote" class="donenote"></span>
+          </div>
+          <ol id="donelist" class="donelist"></ol>
+          <div id="donefoot" class="donefoot"></div>
+        </div>
+        </div>
       </main>
     </div>
     <script src="/static/grid.js"></script>
