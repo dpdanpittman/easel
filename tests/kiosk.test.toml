@@ -1,0 +1,73 @@
+# Settings the test suite runs with (tests/_env.py points KIOSK_CONFIG here). Invented names only.
+[branding]
+title = "Test board"
+assistant = "Agent"
+board_label = "Board"
+owner = "Sam"
+owner_aliases = ["you", "me"]
+
+[time]
+timezone = "America/Denver"
+work_days = [0, 1, 2, 3, 4]
+work_start = "08:00"
+work_end = "16:00"
+
+[notes]
+path = ""
+tasks_heading = "WORK TASKS"
+
+[[linear.workspaces]]
+name = "globex"
+label = "Globex"
+key_cmd = ["kiosk-test-key", "globex"]
+
+[[linear.workspaces]]
+name = "acme"
+label = "Acme"
+key_cmd = ["kiosk-test-key", "acme"]
+
+[github]
+author = "octocat"
+orgs = ["globex-labs", "acme-inc"]
+
+[agents]
+fallback_prefixes = ["OPS", "WEB", "ACME"]
+
+[sky]
+enabled = true
+latitude = 45.0
+longitude = -110.0
+
+[status]
+tiles = [
+  { type = "job", unit = "backup.service", key = "backup", label = "Backup", max_age_h = 30 },
+  { type = "failed" },
+  { type = "service", unit = "chat-bot.service", key = "chat", label = "Chat bot" },
+  { type = "service", unit = "inbox.service", key = "inbox", label = "Inbox" },
+  { type = "disk", path = "/" },
+  { type = "linear" },
+  { type = "github" },
+  { type = "standup", dir = "/nonexistent-kiosk-test", due = "07:45", unit = "standup.service" },
+  { type = "uptime" },
+]
+
+[scene]
+enabled = true
+nodes = [
+  { key = "backup", label = "Backup", units = [{ unit = "backup.service", glow = 900 }], running = "the backup is running", after = "the backup" },
+  { key = "lab", label = "Lab", units = [{ unit = "lab-check.service", glow = 900 }], running = "the lab check is out", after = "the lab check" },
+  { key = "vpn", label = "VPN", units = [{ unit = "vpn-watch.service", glow = 30 }], running = "checking the VPN", after = "the VPN" },
+  { key = "chat", label = "Chat", units = [{ unit = "standup.service", glow = 900 }, { unit = "reminders.service", glow = 0 }], running = "a note is going out", after = "the chat" },
+]
+
+[server]
+state_dir = "/nonexistent-kiosk-test/state"
+
+[remote]
+enabled = true
+tailscale = true
+
+[power]
+enabled = true
+off_from = 1
+off_until = 6

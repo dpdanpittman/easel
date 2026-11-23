@@ -1,0 +1,11 @@
+# Kiosk screen power: every 3 minutes (the script is idempotent and decides from the clock). systemd USER unit.
+[Unit]
+Description=Kiosk: monitor power by the clock
+
+[Timer]
+OnCalendar=*:0/3
+OnStartupSec=1min
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

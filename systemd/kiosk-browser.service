@@ -1,0 +1,36 @@
+# The kiosk browser: cage (a one-window Wayland kiosk) on tty1 running Chromium full screen as your user.
+# SYSTEM unit. Install: copy to /etc/systemd/system/, replace YOURUSER and the path, then
+#   sudo systemctl daemon-reload && sudo systemctl enable --now kiosk-browser.service
+# A text login stays on tty2 (Ctrl+Alt+F2). Undo: sudo systemctl disable --now kiosk-browser.service
+[Unit]
+Description=Kiosk: browser on tty1 (cage + Chromium)
+After=systemd-user-sessions.service plymouth-quit-wait.service
+Conflicts=getty@tty1.service
+After=getty@tty1.service
+ConditionPathExists=/dev/tty1
+# Never give up: a GPU not ready at boot or an unplugged monitor must not leave tty1 blank for good.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=YOURUSER
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=XDG_SESSION_TYPE=wayland
+# -d: no client decorations; -s: allow VT switching
+ExecStart=/usr/bin/cage -d -s -- /home/YOURUSER/src/kiosk/scripts/kiosk-browser.sh
+Restart=always
+RestartSec=5
+RestartSteps=8
+RestartMaxDelaySec=120
+
+[Install]
+WantedBy=graphical.target

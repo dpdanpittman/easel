@@ -1,0 +1,11 @@
+# Kiosk screen power (settings `power`): monitor off during the dark hours, on otherwise. systemd USER unit.
+[Unit]
+Description=Kiosk: monitor power by the clock
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I %h/src/kiosk/power.py
+Environment=WAYLAND_DISPLAY=wayland-0
+TimeoutStartSec=30
+Nice=10
+NoNewPrivileges=yes

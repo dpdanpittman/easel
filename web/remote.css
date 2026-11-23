@@ -1,0 +1,141 @@
+/* Kiosk remote: phone first, big touch targets. System fonts only. */
+:root {
+  --bg: #0b100e;
+  --card: #141c18;
+  --line: #26352e;
+  --ink: #e4e8df;
+  --ink-2: #9ea9a1;
+  --accent: #5fcf8a;
+  --bad: #ff8a80;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    17px/1.35 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+}
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 16px 40px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.status {
+  position: sticky;
+  top: 6px;
+  z-index: 2;
+}
+h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.k {
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.big {
+  font-size: 21px;
+  font-weight: 600;
+  margin: 2px 0 4px;
+  overflow-wrap: anywhere;
+}
+.small {
+  font-size: 15px;
+  color: var(--ink-2);
+  margin: 6px 0;
+}
+.err {
+  color: var(--bad);
+  font-weight: 600;
+  margin-top: 6px;
+}
+.grid {
+  display: grid;
+  gap: 10px;
+}
+.g3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.g2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.wide {
+  grid-column: 1 / -1;
+}
+button,
+select,
+input {
+  font: inherit;
+  color: var(--ink);
+  background: #1e2a24;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  min-height: 56px;
+  padding: 10px 12px;
+}
+button {
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button:active {
+  background: #2a3a32;
+}
+button.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+label {
+  display: block;
+  margin-top: 12px;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+label select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+.row input {
+  flex: 1;
+  min-width: 0;
+}
+.list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.list button {
+  text-align: left;
+  min-height: 50px;
+  font-weight: 500;
+}
+
+.card[hidden],
+.err[hidden] {
+  display: none;
+}

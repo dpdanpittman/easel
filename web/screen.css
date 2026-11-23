@@ -1,0 +1,1155 @@
+/* The kiosk: dark, calm, readable across a room. System fonts only (nothing is loaded from off the box). */
+:root {
+  --bg: #0b100e;
+  --panel: #111815;
+  --line: #22302a;
+  --ink: #e4e8df;
+  --ink-2: #9ea9a1;
+  --ink-3: #66726b;
+  --ok: #5fcf8a;
+  --ok-bg: rgba(95, 207, 138, 0.08);
+  --warn: #f0b85a;
+  --warn-bg: rgba(240, 184, 90, 0.12);
+  --bad: #ff5d52;
+  --bad-bg: rgba(255, 93, 82, 0.16);
+  --info: #8fb4d9;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "DejaVu Serif", serif;
+  --sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, "DejaVu Sans", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  overflow: hidden;
+  cursor: none;
+}
+body {
+  font-family: var(--sans);
+}
+
+/* a fixed 1920x1080 stage, scaled to whatever mode the monitor gives */
+#stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: 0 0;
+  padding: 28px 36px 30px;
+  display: grid;
+  grid-template-rows: 196px 1fr;
+  gap: 24px;
+  transition: translate 2s ease;
+}
+
+/* ---------- status strip ---------- */
+#strip {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 28px;
+  align-items: stretch;
+  border-bottom: 3px solid var(--ok);
+  padding-bottom: 20px;
+  transition: border-color 0.8s;
+}
+#strip[data-overall="warn"] {
+  border-bottom-color: var(--warn);
+}
+#strip[data-overall="bad"] {
+  border-bottom-color: var(--bad);
+  box-shadow: 0 14px 30px -24px var(--bad);
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.time {
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: 124px;
+  line-height: 0.95;
+  letter-spacing: -2px;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+#ampm {
+  font-family: var(--sans);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-left: 12px;
+  color: var(--ink-2);
+}
+.date {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 28px;
+  white-space: nowrap;
+  color: var(--ink-2);
+  margin-top: 8px;
+}
+
+.checks {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+}
+/* work hours: Linear, GitHub and Standup join the strip (Up leaves it), six tiles a row, the same tile look */
+.checks.six {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.checks.six .chip {
+  padding: 12px 12px 10px 34px;
+}
+.checks.six .chip::before {
+  left: 13px;
+}
+.checks.six .chip .lab {
+  font-size: 13px;
+  letter-spacing: 1.5px;
+}
+.checks.six .chip .val {
+  font-size: 22px;
+}
+.chip {
+  position: relative;
+  border-radius: 12px;
+  padding: 12px 16px 10px 40px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  transition:
+    background 0.8s,
+    border-color 0.8s;
+}
+.chip::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.chip .lab {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.chip .val {
+  font-size: 28px;
+  font-weight: 600;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip.ok::before {
+  background: var(--ok);
+  box-shadow: 0 0 10px var(--ok);
+}
+.chip.ok {
+  background: var(--ok-bg);
+}
+.chip.info::before {
+  background: var(--info);
+}
+.chip.warn::before {
+  background: var(--warn);
+}
+.chip.warn {
+  background: var(--warn-bg);
+  border-color: rgba(240, 184, 90, 0.45);
+}
+.chip.warn .val {
+  color: var(--warn);
+}
+.chip.bad::before {
+  background: var(--bad);
+  box-shadow: 0 0 14px var(--bad);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.chip.bad {
+  background: var(--bad-bg);
+  border-color: var(--bad);
+}
+.chip.bad .val {
+  color: #ffb4ad;
+}
+.chip.busy::before {
+  background: #c7a6ff;
+  box-shadow: 0 0 12px #c7a6ff;
+  animation: pulse 2.4s ease-in-out infinite;
+}
+.chip.busy {
+  background: rgba(199, 166, 255, 0.09);
+}
+.chip.verdict {
+  padding-left: 18px;
+  align-items: flex-start;
+}
+.chip.verdict::before {
+  display: none;
+}
+.chip.verdict .val {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 34px;
+}
+.chip.verdict.ok .val {
+  color: var(--ok);
+}
+.chip.verdict.bad .val {
+  color: var(--bad);
+}
+.chip.verdict.warn .val {
+  color: var(--warn);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ---------- body ---------- */
+#body {
+  display: grid;
+  grid-template-columns: 1160px 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "main shop";
+  gap: 28px;
+  min-height: 0;
+}
+#offpanel[hidden],
+#flightpanel[hidden] {
+  display: none;
+}
+#flightpanel,
+#offpanel {
+  grid-area: main;
+}
+#offpanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.off-big {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 64px;
+}
+.off-small {
+  margin-top: 16px;
+  font-size: 26px;
+  color: var(--ink-2);
+}
+.skyfacts[hidden] {
+  display: none;
+}
+#workshop {
+  grid-area: shop;
+}
+#taskpanel {
+  grid-area: tasks;
+}
+#taskpanel[hidden] {
+  display: none;
+}
+
+/* work hours (decided by the server): the task list on top of the left column, In flight under it, the workshop a
+   little narrower */
+body.work #body {
+  grid-template-columns: 1fr 560px;
+  /* the task list takes what it needs up to 58% of the column until the page sizes both from their content
+     (body.alloc, screen.js "Sizing") */
+  grid-template-rows: fit-content(58%) minmax(0, 1fr);
+  grid-template-areas: "tasks shop" "main shop";
+  row-gap: 20px;
+}
+body.work .caption {
+  font-size: 26px;
+  min-height: 80px;
+}
+body.work .fact .v {
+  font-size: 22px;
+}
+body.work .skynote {
+  font-size: 19px;
+}
+/* work hours: the caption and the daylight facts move up right under the scene; the space freed
+   below them is #shopspare, the Done this week box (done.py). Outside work hours the workshop is unchanged (the
+   caption takes the middle, the facts sit at the bottom, no box). */
+body.work #workshop {
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}
+body.work .caption {
+  min-height: 0;
+  padding: 12px 10px 10px;
+}
+body.work .skyfacts {
+  align-self: start;
+}
+.shopspare {
+  display: none;
+}
+body.work .shopspare {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  margin-top: 8px;
+  padding: 8px 6px 0;
+  border-top: 1px solid var(--line);
+}
+.donehead {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.donetitle {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.donecount {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--ink-2);
+  margin-left: 8px;
+}
+.donenote {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--warn);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.donelist {
+  flex: none;
+  list-style: none;
+  margin: 3px 0 0;
+  padding: 0;
+}
+.donelist .done {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 18px;
+  line-height: 24px;
+  white-space: nowrap;
+  min-width: 0;
+}
+.donelist .dage {
+  flex: none;
+  width: 38px;
+  text-align: right;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.donelist .dref {
+  flex: none;
+  font-weight: 600;
+  color: var(--ok);
+}
+.donelist .dtitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+.donelist .dnone {
+  color: var(--ink-3);
+  font-style: italic;
+}
+.donefoot {
+  flex: none;
+  display: flex;
+  gap: 16px;
+  margin-top: 2px;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  min-width: 0;
+}
+.donefoot .dclose {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.donefoot .dclose.some {
+  color: var(--warn);
+}
+
+#taskpanel {
+  padding: 12px 26px 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.taskhead {
+  flex: none;
+}
+/* a scrolling window (auto-scroll when its list does not fit; screen.js "Auto-scroll") */
+.tview,
+.fview {
+  position: relative;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.tasklist,
+.flist {
+  will-change: transform;
+}
+body.work.alloc #body {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+body.alloc .tview,
+body.alloc .fview {
+  flex: none;
+}
+.fgroup,
+.fcols {
+  position: relative;
+}
+.taskhead {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.tasktitle {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 34px;
+}
+.taskcount {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--ink-2);
+}
+.tasklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 40px;
+  row-gap: 10px;
+}
+.task {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 8px;
+  align-content: start; /* beside a taller grouped row, a row keeps its lines together at the top */
+}
+.task .tn {
+  grid-row: 1 / span 2;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-align: right;
+  line-height: 32px;
+}
+.task .tl {
+  font-size: 27px;
+  font-weight: 600;
+  line-height: 32px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.task .tid {
+  color: var(--info);
+  margin-right: 10px;
+}
+.task .ts {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 27px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.task.nostate .tl {
+  /* no state line: the title may take two lines */
+  grid-row: 1 / span 2;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.task.nostate .ts {
+  display: none;
+}
+.task.done {
+  opacity: 0.45;
+}
+.task .tprio {
+  display: inline-block;
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 7px;
+  margin-right: 10px;
+  border-radius: 6px;
+  vertical-align: 3px;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.task .tprio.p1 {
+  color: var(--bg, #0d1311);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.task .tprio.p2 {
+  color: var(--ink);
+  border-color: var(--ink-2);
+}
+.task.active .tn {
+  color: var(--ok);
+}
+.task.active .ts {
+  color: var(--ok);
+  font-style: normal;
+  font-family: inherit;
+  font-weight: 600;
+}
+.task.waiting .tn {
+  color: var(--warn);
+}
+.task.waiting .ts {
+  color: var(--warn);
+  font-style: normal;
+  font-family: inherit;
+  font-weight: 600;
+}
+/* the derived state keeps the quiet italic look; only the flag after it takes the waiting/running colour */
+.task.waiting .ts .tstate,
+.task.active .ts .tstate {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+/* the list is held back (Linear loading or down): one plain line across both columns */
+.task.tblocked {
+  grid-column: 1 / -1;
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  line-height: 30px;
+  color: var(--warn);
+  white-space: normal;
+}
+/* running per the harness, but the agent has not written for a long while */
+.fi.quiet .fm,
+.fi.quiet .fa {
+  color: var(--warn);
+}
+.task.done .tn {
+  color: var(--ok);
+}
+.task.done .tl {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+/* a grouped row (screen.js groupRow): the line's own label on top, then one ticket at a time. All steps sit in the same grid
+   cell, the hidden ones still take their space, so the row is as tall as its tallest step and never jumps. */
+.task .tglabel {
+  grid-column: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  font-size: 19px;
+  line-height: 25px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.task .tglabel .tprio {
+  font-size: 15px;
+  line-height: 19px;
+  margin-right: 0;
+  vertical-align: 0;
+}
+.task .tglt {
+  /* the hand-written words: up to two lines before they are cut (the label never cycles, so the height stays put) */
+  min-width: 0;
+  white-space: normal;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.task .tgpos {
+  flex: none;
+  margin-left: auto;
+  font-size: 17px;
+  letter-spacing: 0.04em;
+}
+.task .tgsteps {
+  grid-column: 1 / -1;
+  display: grid;
+  min-width: 0;
+}
+.task .tgstep {
+  grid-area: 1 / 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  column-gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  /* the old step fades out, then the new one fades in: never two lines of text over each other */
+  transition:
+    opacity 0.4s ease-in-out,
+    visibility 0s linear 0.4s;
+}
+.task .tgstep.on {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.4s ease-in-out 0.4s,
+    visibility 0s linear 0.4s;
+}
+.task .tgstep.active .tn,
+.task .tgstep.active .ts {
+  color: var(--ok);
+}
+.task .tgstep.waiting .tn,
+.task .tgstep.waiting .ts {
+  color: var(--warn);
+}
+.task .tgstep.active .ts,
+.task .tgstep.waiting .ts {
+  font-style: normal;
+  font-family: inherit;
+  font-weight: 600;
+}
+.task .tgstep.waiting .ts .tstate,
+.task .tgstep.active .ts .tstate {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .task .tgstep,
+  .task .tgstep.on {
+    transition: none;
+  }
+}
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  min-height: 0;
+}
+
+/* ---------- the workshop ---------- */
+#workshop {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  padding: 18px 20px 16px;
+  overflow: hidden;
+}
+.caption {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 29px;
+  line-height: 1.25;
+  text-align: center;
+  padding: 14px 10px 6px;
+  min-height: 92px;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.caption b {
+  font-style: normal;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 24px;
+}
+.caption.bad b {
+  color: #ffb4ad;
+}
+.skyfacts {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  justify-content: space-between;
+  align-self: end;
+  padding: 12px 12px 4px;
+  border-top: 1px solid var(--line);
+}
+.fact {
+  display: flex;
+  flex-direction: column;
+}
+.fact .k {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.fact .v {
+  font-size: 25px;
+  font-weight: 500;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.fact .v small {
+  font-size: 17px;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.skynote {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 21px;
+  color: var(--ink-2);
+  text-align: center;
+  padding: 6px 10px 0;
+}
+
+body.mode-tasks #body {
+  grid-template-columns: 1fr 560px;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "tasks shop";
+}
+body.mode-tasks #taskpanel {
+  padding: 20px 30px;
+}
+body.mode-tasks .tasktitle {
+  font-size: 48px;
+}
+body.mode-tasks .taskcount {
+  font-size: 26px;
+}
+body.mode-tasks .tasklist {
+  row-gap: 26px;
+  column-gap: 44px;
+}
+body.mode-tasks .task,
+body.mode-tasks .task .tgstep {
+  grid-template-columns: 48px minmax(0, 1fr);
+}
+body.mode-tasks .task .tglabel {
+  font-size: 22px;
+  line-height: 29px;
+}
+body.mode-tasks .task .tn {
+  font-size: 28px;
+  line-height: 38px;
+}
+body.mode-tasks .task .tl {
+  font-size: 31px;
+  line-height: 38px;
+}
+body.mode-tasks .task .ts {
+  font-size: 25px;
+  line-height: 31px;
+}
+body.mode-tasks .caption {
+  font-size: 26px;
+  min-height: 80px;
+}
+body.mode-tasks .fact .v {
+  font-size: 22px;
+}
+body.mode-tasks .skynote {
+  font-size: 19px;
+}
+
+/* ---------- In flight ---------- */
+#flightpanel {
+  display: flex;
+  flex-direction: column;
+  padding: 14px 30px 18px;
+  overflow: hidden;
+  gap: 18px;
+}
+.flighthead {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  flex: none;
+}
+.flighttitle {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 44px;
+  line-height: 1;
+}
+.flightsub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  color: var(--ink-2);
+}
+.flightgh {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.flightgh.off {
+  color: var(--warn);
+}
+/* a source that has not answered for longer than its normal period: its age, in amber */
+.tasksrc {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--warn);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.flightempty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.flightempty[hidden],
+.fgroup[hidden] {
+  display: none;
+}
+.fe-big {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 54px;
+}
+.fe-small {
+  margin-top: 14px;
+  font-size: 24px;
+  color: var(--ink-2);
+}
+.fgroup {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.fglab {
+  flex: none;
+}
+.fglab {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 10px;
+}
+.fgn {
+  margin-left: 12px;
+  color: var(--ink-3);
+}
+.flist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fi {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 10px;
+  min-width: 0;
+}
+.fi .fm {
+  font-weight: 700;
+  text-align: center;
+}
+.fi .ft {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fi .fa {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.fi .fx {
+  display: inline-block;
+  font-size: 0.62em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 9px;
+  margin-left: 14px;
+  border-radius: 7px;
+  vertical-align: 0.18em;
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.fi .fx.green {
+  color: var(--ok);
+  border-color: rgba(95, 207, 138, 0.5);
+}
+.fi .fx.amber {
+  color: var(--warn);
+  border-color: rgba(240, 184, 90, 0.5);
+}
+.fi .fx.red {
+  color: #ffb4ad;
+  border-color: rgba(255, 93, 82, 0.6);
+}
+.fquiet {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 24px;
+  color: var(--ink-3);
+}
+
+/* waiting on you: the loudest thing on the panel */
+.fwait {
+  flex: 0 1 auto;
+}
+
+.fwait .fglab {
+  color: var(--warn);
+}
+.fwait .fi {
+  background: var(--warn-bg);
+  border-left: 6px solid var(--warn);
+  border-radius: 10px;
+  padding: 10px 18px 10px 8px;
+  font-size: 34px;
+  line-height: 42px;
+}
+.fwait .fi .fm {
+  color: var(--warn);
+}
+.fwait .fi .ft {
+  /* the full layout has the room: what waits on you may take two lines rather than lose its end */
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+body.work .fwait .fi .ft {
+  white-space: nowrap;
+  display: block;
+}
+.fcols {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-rows: minmax(0, 1fr);
+  column-gap: 40px;
+}
+.frun .fglab {
+  color: var(--ok);
+}
+.frun .fi,
+.fdone .fi {
+  font-size: 27px;
+  line-height: 34px;
+}
+.frun .fi .fm,
+.frun .fi .fa {
+  color: var(--ok);
+}
+.fdone .fi {
+  opacity: 0.55;
+}
+.fdone .fi .fa {
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.fprs {
+  flex: 0 1 auto;
+  max-height: 30%;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.fprs .fglab {
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+.fprs .flist {
+  gap: 4px;
+}
+.fprs .fi {
+  font-size: 22px;
+  line-height: 28px;
+  color: var(--ink-2);
+}
+.fprs .fi .ft {
+  font-weight: 500;
+}
+.fref {
+  color: var(--info);
+  margin-right: 10px;
+}
+
+/* work hours: In flight sits under the task list in less height, so it goes two-wide: what waits on you on the
+   left, running and just finished on the right (the newest first, cut at the bottom), open PRs
+   on one line */
+body.work #flightpanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  column-gap: 30px;
+  row-gap: 10px;
+  padding: 10px 26px 12px;
+}
+body.work .flighthead,
+body.work .flightempty,
+body.work .fprs {
+  grid-column: 1 / -1;
+}
+body.work .fwait {
+  grid-column: 1;
+  grid-row: 2;
+}
+body.work .fcols {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+/* running takes what it needs (at most 60%), just finished the rest; each scrolls itself when it does not fit */
+body.work .frun {
+  flex: 0 1 auto;
+  max-height: 60%;
+}
+body.alloc .frun {
+  flex: none;
+  max-height: none;
+}
+body.work .fdone {
+  flex: 1 1 0;
+  min-height: 62px;
+}
+body.work .flighttitle {
+  font-size: 34px;
+}
+body.work .flightsub {
+  font-size: 21px;
+}
+body.work .flighthead {
+  padding-bottom: 6px;
+}
+body.work .fwait .fi {
+  font-size: 26px;
+  line-height: 31px;
+  padding: 6px 14px 6px 4px;
+}
+body.work .flist {
+  gap: 6px;
+}
+body.work .frun .fi,
+body.work .fdone .fi {
+  font-size: 21px;
+  line-height: 27px;
+}
+body.work .frun .flist,
+body.work .fdone .flist {
+  gap: 3px;
+}
+body.work .fi {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  column-gap: 8px;
+}
+body.work .fquiet {
+  font-size: 21px;
+}
+body.work .fglab {
+  font-size: 15px;
+  margin-bottom: 5px;
+}
+body.work .fprs {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 16px;
+  padding-top: 6px;
+  min-width: 0;
+  max-height: none;
+}
+body.work .fprs .fview {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+body.work .fprs[hidden] {
+  display: none;
+}
+body.work .fprs .fglab {
+  margin: 0;
+  white-space: nowrap;
+}
+body.work .fprs .flist {
+  flex-direction: row;
+  gap: 28px;
+  min-width: 0;
+  overflow: hidden;
+}
+body.work .fprs .fi {
+  font-size: 20px;
+  line-height: 26px;
+  min-width: 0;
+}

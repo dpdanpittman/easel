@@ -1,0 +1,115 @@
+# kiosk.example.toml: every setting the kiosk reads, with invented example values.
+# Copy it to ~/.config/kiosk/kiosk.toml (or ./kiosk.toml, or point KIOSK_CONFIG at it) and edit.
+# Never put a key or token in this file: Linear keys come from a command at run time (key_cmd), GitHub from the
+# gh CLI's own login. The server refuses a workspace that has a "key" field.
+
+[branding]
+title = "Work board"            # the page title
+board_label = "Board"           # the label of the verdict tile ("All green" / "Have a look" / "Needs you")
+assistant = "Agent"             # the name of your coding assistant: its status tile and the scene's captions
+# The person the board is for. A hand "WAITING ON: <who>" in the notes file that names them (or an alias) is
+# treated as theirs: it shows only while a current IN FLIGHT W line says so.
+owner = "Sam"
+owner_aliases = ["you", "me"]
+
+[time]
+timezone = "America/New_York"   # every clock, work hour and notes-file time is read in this zone
+work_days = [0, 1, 2, 3, 4]     # Monday = 0
+work_start = "08:00"            # the work panels show from work_start (inclusive) to work_end (exclusive)
+work_end = "16:00"
+always_show = false             # true: no off-hours view, the work panels show at any hour
+
+[notes]
+# The sketchbook: an append-only notes file that holds the IN FLIGHT and the WORK TASKS blocks (README: "The notes
+# file"). Leave empty to run from Linear and GitHub alone.
+path = "~/notes/sketchbook.md"
+tasks_heading = "WORK TASKS"    # "- 2026-01-05 09:00 WORK TASKS:" (also "SAM'S WORK TASKS")
+
+# One block per Linear workspace. key_cmd is a command (a list, run without a shell) that prints a READ-ONLY
+# personal API key on stdout. The key is held in memory only and sent only in the Authorization header.
+[[linear.workspaces]]
+name = "acme"
+label = "Acme"
+key_cmd = ["pass", "show", "linear/acme-read"]
+
+[[linear.workspaces]]
+name = "globex"
+label = "Globex"
+key_cmd = ["op", "read", "op://Kiosk/Linear Globex read/credential"]
+
+[github]
+enabled = true
+gh = "gh"                       # the GitHub CLI; it must already be logged in (gh auth login)
+author = "@me"                  # whose PRs: "@me" (the gh login) or a login
+orgs = ["acme-inc", "globex-labs"]
+
+[status]
+# The strip's tiles, in order. Types:
+#   failed   number of failed systemd user units
+#   disk     free space of `path`
+#   uptime   the box's uptime (left out in work hours unless hide_in_work_hours = false)
+#   service  a long-running systemd user unit: running / starting / failed
+#   job      a timer-driven systemd user unit: running now, last run ok and when, failed, or older than max_age_h
+#   linear   age of the last good Linear fetch (work hours only)
+#   github   age of the last good GitHub fetch (work hours only)
+#   standup  a standup job's daily record in `dir` (work hours only; README: "The standup tile")
+# Every tile takes an optional label.
+tiles = [
+  { type = "job", unit = "backup.service", key = "backup", label = "Backup", max_age_h = 30 },
+  { type = "failed", label = "Jobs" },
+  { type = "service", unit = "chat-bot.service", key = "bot", label = "Chat bot" },
+  { type = "disk", path = "/" },
+  { type = "linear" },
+  { type = "github" },
+  { type = "standup", dir = "~/.local/state/standup", due = "09:30", unit = "standup.service" },
+  { type = "uptime" },
+]
+
+[session]
+# The assistant tile says "in session" while a Claude Code transcript under projects_dir was written in the last
+# window_s seconds (file times only, never content). Headless runs (a folder ending in "-run") and /tmp are skipped.
+enabled = true
+projects_dir = "~/.claude/projects"
+window_s = 120
+
+[agents]
+# Running now / Just finished for background agents, from scripts/agents-hook.py (README: "Background agents").
+enabled = true
+state_file = ""                 # "" = <server.state_dir>/agents.json
+fallback_prefixes = ["ACME", "OPS"]   # ticket prefixes that mark an agent as work while Linear has not answered
+
+[scene]
+# The grid in the right panel: one node per job on the box's rounds, lit by its systemd user units only.
+# glow = seconds a node keeps glowing after a run ends (0: only while it runs). At most 9 nodes.
+enabled = true
+nodes = [
+  { key = "backup", label = "Backup", units = [{ unit = "backup.service", glow = 900 }], running = "the backup is running", after = "the backup" },
+  { key = "bot", label = "Chat", units = [{ unit = "chat-bot-digest.service", glow = 300 }], running = "a digest is going out", after = "the digest" },
+  { key = "tidy", label = "Files", units = [{ unit = "tidy.service", glow = 900 }], running = "tidying the home folder", after = "the home folder" },
+]
+
+[sky]
+# Sunrise, sunset, daylight and the moon under the scene, computed locally (no network). Off by default.
+enabled = false
+latitude = 40.7
+longitude = -74.0
+
+[server]
+host = "127.0.0.1"
+port = 8090
+state_dir = "~/.local/state/kiosk"   # the last good Linear/GitHub answers (no secrets), the agents record
+
+[remote]
+# A phone page that switches the left panel and holds the monitor on or off. Off by default. A second listener
+# serves only the remote, to peers in allowed_networks with a Host header naming this box.
+enabled = false
+tailscale = true                # listen on this box's Tailscale address (tailscale ip -4)
+listen = ""                     # or a fixed address
+allowed_networks = ["100.64.0.0/10"]
+hostnames = []                  # extra Host names to answer to
+
+[power]
+# Monitor dark between these hours (local time) through wlr-randr (a wlroots compositor such as cage). Off by default.
+enabled = false
+off_from = 1
+off_until = 6

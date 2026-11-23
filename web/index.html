@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kiosk</title>
+    <link rel="stylesheet" href="/static/screen.css" />
+    <link rel="stylesheet" href="/static/grid.css" />
+  </head>
+  <body>
+    <div id="stage">
+      <header id="strip" data-overall="ok">
+        <div class="clock">
+          <div class="time">
+            <span id="hm">--:--</span><span id="ampm"></span>
+          </div>
+          <div id="date" class="date"></div>
+        </div>
+        <div id="checks" class="checks" aria-live="off"></div>
+      </header>
+
+      <main id="body">
+        <!-- In flight: what is waiting on you, what the assistant has running, what just landed (/api/inflight, work
+             hours only, like the task list; the server decides, and outside them the off-hours view takes this spot) -->
+        <section id="flightpanel" class="panel" hidden>
+          <div class="flighthead">
+            <span class="flighttitle">In flight</span>
+            <span id="flightsub" class="flightsub"></span>
+            <span id="flightgh" class="flightgh"></span>
+          </div>
+          <div id="flightempty" class="flightempty" hidden>
+            <div class="fe-big">Nothing in flight.</div>
+            <div class="fe-small">
+              Nothing waiting on you, nothing running, nothing just finished.
+            </div>
+          </div>
+          <div id="g-wait" class="fgroup fwait">
+            <div class="fglab">Waiting on you<span class="fgn"></span></div>
+            <div class="fview"><ul class="flist"></ul></div>
+          </div>
+          <div class="fcols">
+            <div id="g-run" class="fgroup frun">
+              <div class="fglab">Running now<span class="fgn"></span></div>
+              <div class="fview"><ul class="flist"></ul></div>
+            </div>
+            <div id="g-done" class="fgroup fdone">
+              <div class="fglab">Just finished<span class="fgn"></span></div>
+              <div class="fview"><ul class="flist"></ul></div>
+            </div>
+          </div>
+          <div id="g-prs" class="fgroup fprs" hidden>
+            <div class="fglab">Open PRs<span class="fgn"></span></div>
+            <div class="fview"><ul class="flist"></ul></div>
+          </div>
+        </section>
+
+        <!-- Off hours: outside work hours the left column rests (the server decides, from its own clock) -->
+        <section id="offpanel" class="panel" hidden>
+          <div class="off-big">Off the clock.</div>
+          <div id="offsmall" class="off-small">The board comes back at the start of the next work day.</div>
+        </section>
+
+        <!-- the work tasks: work hours only (the server decides; empty list otherwise) -->
+        <section id="taskpanel" class="panel" hidden>
+          <div class="taskhead">
+            <span class="tasktitle">Work tasks</span>
+            <span id="taskcount" class="taskcount"></span>
+            <span id="tasksrc" class="tasksrc"></span>
+          </div>
+          <div id="taskview" class="tview"><ol id="tasklist" class="tasklist"></ol></div>
+        </section>
+
+        <aside id="workshop" class="panel">
+          <!-- the scene: the assistant's grid, drawn by grid.js from /api/status (settings `scene`) -->
+          <div id="grid" role="img" aria-label="The assistant on the grid" hidden></div>
+
+          <div id="caption" class="caption"></div>
+
+          <div id="skyfacts" class="skyfacts" hidden>
+            <div class="fact">
+              <span class="k">Sunrise</span><span id="f-rise" class="v">-</span>
+            </div>
+            <div class="fact">
+              <span class="k">Sunset</span><span id="f-set" class="v">-</span>
+            </div>
+            <div class="fact">
+              <span class="k">Daylight</span><span id="f-day" class="v">-</span>
+            </div>
+            <div class="fact">
+              <span class="k">Moon</span><span id="f-moon" class="v">-</span>
+            </div>
+          </div>
+          <div id="skynote" class="skynote"></div>
+          <!-- Done this week (done.py, /api/done): in work hours the caption and the daylight facts sit right under the
+               scene and this box holds the space freed below them; not shown outside work hours.
+               Rows that do not fit are counted in "+N more", never dropped silently. -->
+          <div id="shopspare" class="shopspare">
+            <div class="donehead">
+              <span class="donetitle">Done this week</span><span id="donecount" class="donecount"></span>
+              <span id="donenote" class="donenote"></span>
+            </div>
+            <ol id="donelist" class="donelist"></ol>
+            <div id="donefoot" class="donefoot"></div>
+          </div>
+        </aside>
+      </main>
+    </div>
+    <script src="/static/grid.js"></script>
+    <script src="/static/fit.js"></script>
+    <script src="/static/screen.js"></script>
+  </body>
+</html>

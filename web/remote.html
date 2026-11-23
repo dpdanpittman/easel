@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Kiosk Remote</title>
+    <link rel="stylesheet" href="/static/remote.css" />
+  </head>
+  <body>
+    <main>
+      <header class="card status">
+        <div class="k">On the screen</div>
+        <div id="showing" class="big">…</div>
+        <div id="screenline" class="small"></div>
+        <div id="err" class="err" hidden></div>
+      </header>
+
+      <section class="card">
+        <h2>Left panel</h2>
+        <div class="grid g3" id="panels">
+          <button data-panel="auto" class="wide">Back to normal</button>
+          <button data-panel="tasks">Tasks</button>
+          <button data-panel="inflight">In flight</button>
+        </div>
+        <div class="small">Tasks and In flight show full size at any hour until "Back to normal".</div>
+      </section>
+
+      <section class="card" id="screencard" hidden>
+        <h2>Screen</h2>
+        <div class="grid g3">
+          <button data-act="screen.on">On now</button>
+          <button data-act="screen.off">Off now</button>
+          <button data-act="screen.auto">Schedule</button>
+        </div>
+        <div class="small">On/Off holds until the next schedule change, then the schedule resumes.</div>
+      </section>
+    </main>
+    <script src="/static/remote.js"></script>
+  </body>
+</html>
