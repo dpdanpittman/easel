@@ -1,4 +1,4 @@
-# Settings the test suite runs with (tests/_env.py points KIOSK_CONFIG here). Invented names only.
+# Settings the test suite runs with (tests/_env.py points EASEL_CONFIG here). Invented names only.
 [branding]
 title = "Test board"
 assistant = "Agent"
@@ -19,12 +19,12 @@ tasks_heading = "WORK TASKS"
 [[linear.workspaces]]
 name = "globex"
 label = "Globex"
-key_cmd = ["kiosk-test-key", "globex"]
+key_cmd = ["easel-test-key", "globex"]
 
 [[linear.workspaces]]
 name = "acme"
 label = "Acme"
-key_cmd = ["kiosk-test-key", "acme"]
+key_cmd = ["easel-test-key", "acme"]
 
 [github]
 author = "octocat"
@@ -47,7 +47,7 @@ tiles = [
   { type = "disk", path = "/" },
   { type = "linear" },
   { type = "github" },
-  { type = "standup", dir = "/nonexistent-kiosk-test", due = "07:45", unit = "standup.service" },
+  { type = "standup", dir = "/nonexistent-easel-test", due = "07:45", unit = "standup.service" },
   { type = "uptime" },
 ]
 
@@ -61,7 +61,7 @@ nodes = [
 ]
 
 [server]
-state_dir = "/nonexistent-kiosk-test/state"
+state_dir = "/nonexistent-easel-test/state"
 
 [remote]
 enabled = true

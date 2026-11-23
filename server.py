@@ -1,8 +1,8 @@
 #!/usr/bin/python3 -I
-"""The kiosk server: the page, its JSON, and the remote. Standard library only.
+"""The easel server: the page, its JSON, and the remote. Standard library only.
 
 Two listeners on the same port (settings `server.port`):
-  - `server.host` (127.0.0.1): everything below (the kiosk browser on this box);
+  - `server.host` (127.0.0.1): everything below (the easel browser on this box);
   - with settings `remote.enabled`: this box's Tailscale address (`tailscale ip -4`, when `remote.tailscale`) or
     `remote.listen`, serving ONLY the remote (/remote, its CSS/JS, /api/remote/state, /api/control). If Tailscale is
     not up yet it retries every 30 s. Every request also passes remote.gate() (peer and Host).
@@ -13,7 +13,7 @@ Two listeners on the same port (settings `server.port`):
   /api/tasks        the work task list, work hours only (tasks.py, cached 10 s)
   /api/inflight     the In flight panel: waiting on you, running, just finished, open PRs (inflight.py, cached 10 s)
   /api/done         the Done this week box, work hours only (done.py, cached 10 s)
-  /api/mode         what the left panel shows (remote.py), polled every second by the kiosk
+  /api/mode         what the left panel shows (remote.py), polled every second by the easel
   /remote, /api/remote/state, POST /api/control   the remote (local and remote listener)
 Everything else is 404. Nothing is ever written to Linear or GitHub.
 """
@@ -41,7 +41,7 @@ import tasks    # noqa: E402
 _C = config.get()
 WEB = os.path.join(HERE, "web")
 HOST = _C["server"]["host"]
-PORT = int(os.environ.get("KIOSK_PORT") or _C["server"]["port"])
+PORT = int(os.environ.get("EASEL_PORT") or _C["server"]["port"])
 CACHE_S = 10
 # a page build id: the page reloads itself when the server's own files change
 BUILD = str(int(max(os.stat(os.path.join(d, f)).st_mtime
@@ -176,7 +176,7 @@ def status_body():
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "kiosk"
+    server_version = "easel"
     sys_version = ""
 
     def log_message(self, fmt, *args):   # quiet: the page polls every 15 s
@@ -343,11 +343,11 @@ def serve_remote():
             try:
                 srv = Server((ip, PORT), Handler)
             except OSError as e:
-                print(f"kiosk: remote bind failed ({type(e).__name__}); retrying", flush=True)
+                print(f"easel: remote bind failed ({type(e).__name__}); retrying", flush=True)
             else:
                 srv.daemon_threads = True
                 srv.kind, srv.names = "remote", names
-                print(f"kiosk: remote on {ip}:{PORT}", flush=True)
+                print(f"easel: remote on {ip}:{PORT}", flush=True)
                 srv.serve_forever()
         time.sleep(30)
 
@@ -356,7 +356,7 @@ def main():
     srv = Server((HOST, PORT), Handler)
     srv.daemon_threads = True
     srv.kind, srv.names = "local", ()
-    print(f"kiosk: serving on {HOST}:{PORT}", flush=True)
+    print(f"easel: serving on {HOST}:{PORT}", flush=True)
     if _C["remote"]["enabled"]:
         threading.Thread(target=serve_remote, daemon=True).start()
     srv.serve_forever()

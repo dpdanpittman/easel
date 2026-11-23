@@ -20,9 +20,9 @@ A wall board for work hours: a small Python server (standard library only) and a
 - `remote.py` the remote's access rules and actions; `power.py` monitor power via wlr-randr.
 - `diskcache.py` the last good answers on disk.
 - `web/` the page (`index.html`, `screen.js`, `screen.css`), the pure fit rules (`fit.js`), the scene (`grid.js`, `grid.css`), the remote page.
-- `scripts/` the demo server on invented data, the screenshot script, the kiosk browser launcher, the hook.
+- `scripts/` the demo server on invented data, the screenshot script, the kiosk browser launcher (`easel-browser.sh`), the hook.
 - `systemd/` example units.
-- `tests/` the test suite; `tests/kiosk.test.toml` is the settings it runs with.
+- `tests/` the test suite; `tests/easel.test.toml` is the settings it runs with.
 
 ## Commands
 
@@ -45,5 +45,5 @@ python3 scripts/screenshot.py                  # docs/screenshot.png from the de
 - Every source fails closed and says so in amber; a missing source never makes a list look short or complete.
 - Nothing is hidden silently: real counts in every heading, whole rows only, motion only when a whole row cannot be shown.
 - Tests use invented names and ticket ids (ACME-, OPS-, WEB-; Sam, Priya). Never put real names, hosts, addresses or tickets in code, tests or docs.
-- Keep the standard library only for the server. New settings go in `config.DEFAULTS`, `kiosk.example.toml` and README in the same change.
+- Keep the standard library only for the server. New settings go in `config.DEFAULTS`, `easel.example.toml` and README in the same change.
 - Run the tests and `node --check` before calling a change done, and say plainly what was not run.

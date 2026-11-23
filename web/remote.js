@@ -1,4 +1,4 @@
-/* The kiosk remote. Every change is a POST to /api/control with the X-Kiosk-Remote header (the server refuses
+/* The easel remote. Every change is a POST to /api/control with the X-Easel-Remote header (the server refuses
    anything without it). Reads /api/remote/state every 3 s while the page is visible. */
 (function () {
   "use strict";
@@ -15,7 +15,7 @@
   function control(action, args) {
     return fetch("/api/control", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Kiosk-Remote": "1" },
+      headers: { "Content-Type": "application/json", "X-Easel-Remote": "1" },
       body: JSON.stringify({ action: action, args: args || {} }),
       credentials: "same-origin",
     })
@@ -39,7 +39,7 @@
         return res.j;
       })
       .catch(function () {
-        showErr("the kiosk did not answer");
+        showErr("the easel did not answer");
         return null;
       });
   }
@@ -69,7 +69,7 @@
         if (s) render(s);
       })
       .catch(function () {
-        showErr("the kiosk did not answer");
+        showErr("the easel did not answer");
       });
   }
 

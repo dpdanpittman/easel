@@ -1,17 +1,17 @@
 #!/usr/bin/python3 -I
-"""Kiosk screen power (settings `power`): the monitor is OFF from `off_from` to `off_until` (hours, local time),
+"""Easel screen power (settings `power`): the monitor is OFF from `off_from` to `off_until` (hours, local time),
 every day, and ON the rest of the day.
 
 Clock-driven and idempotent: every run decides on/off from the local clock and switches the output only when it is
-not already in that state, so a kiosk restart or a reboot in the night still ends dark and the morning always comes back on.
-Run by kiosk-power.timer (user unit: every 3 minutes) as kiosk-power.service.
+not already in that state, so an easel restart or a reboot in the night still ends dark and the morning always comes back on.
+Run by easel-power.timer (user unit: every 3 minutes) as easel-power.service.
 
 Remote override (remote.py, "Screen on now" / "off now"): <server.state_dir>/override.json holds
 {"want": "on"|"off", "set_at": ts, "until": ts}, where `until` is the next schedule boundary after it
 was set. While it is valid it wins over the clock; at the boundary it expires and the schedule resumes (the file is
 removed on the next run). A missing, unreadable or odd file means "no override": the schedule decides.
 
-The output name is read from `wlr-randr` at run time ; every output found is set. When the kiosk is
+The output name is read from `wlr-randr` at run time ; every output found is set. When the easel is
 down (no Wayland socket) there is nothing to switch: exit 0 quietly. Each wlr-randr call is bounded by a timeout.
 
   power.py            set the screen for the current time
@@ -121,7 +121,7 @@ def _env():
 
 
 def outputs():
-    """{name: enabled} from wlr-randr, or None when the kiosk is down or wlr-randr fails."""
+    """{name: enabled} from wlr-randr, or None when the easel is down or wlr-randr fails."""
     env = _env()
     if not os.path.exists(os.path.join(env["XDG_RUNTIME_DIR"], env["WAYLAND_DISPLAY"])):
         return None
@@ -146,7 +146,7 @@ def main(argv, path=None):
               f"{next_boundary(now).strftime('%-I:%M %p')}")
     if not os.path.exists(sock):
         if dry:
-            print(f"screen power: kiosk down (no Wayland socket); would want {want}")
+            print(f"screen power: easel down (no Wayland socket); would want {want}")
         return 0
     r = subprocess.run(["wlr-randr"], capture_output=True, text=True, timeout=TIMEOUT_S, env=env)
     if r.returncode != 0:

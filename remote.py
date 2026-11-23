@@ -1,4 +1,4 @@
-"""The remote: a phone page that chooses what the kiosk's left panel shows, and holds the monitor on or off.
+"""The remote: a phone page that chooses what the easel's left panel shows, and holds the monitor on or off.
 
 State lives in memory only (a server restart is "back to normal"); the one file is power.py's screen override.
 
@@ -13,7 +13,7 @@ Access (decided by gate(), fail closed):
     `remote.allowed_networks` (default the Tailscale range 100.64.0.0/10), with Host set to one of the listener's own
     names, and only the REMOTE_PATHS (no task list, no status);
   - anything else is 403. The Host check stops DNS rebinding.
-Control POSTs need the header X-Kiosk-Remote: 1 and a JSON body (a form on another site cannot send either without
+Control POSTs need the header X-Easel-Remote: 1 and a JSON body (a form on another site cannot send either without
 a CORS preflight, which this server never grants). Actions are rate limited per peer and logged as name and count.
 """
 import ipaddress
@@ -31,7 +31,7 @@ ALLOWED = tuple(ipaddress.ip_network(n) for n in config.get()["remote"]["allowed
 TAILNET = ipaddress.ip_network("100.64.0.0/10")
 REMOTE_PATHS = {"/remote", "/static/remote.css", "/static/remote.js", "/api/remote/state", "/api/control"}
 PANELS = ("auto", "tasks", "inflight")
-CONTROL_HEADER = "X-Kiosk-Remote"
+CONTROL_HEADER = "X-Easel-Remote"
 MAX_BODY = 4096
 POWER = bool(config.get()["power"]["enabled"])
 
@@ -141,7 +141,7 @@ class Remote:
     def _normal(self):
         self._set_panel("auto")
 
-    # ---------- what the kiosk reads (every second) ----------
+    # ---------- what the easel reads (every second) ----------
     def mode(self):
         with self.lock:
             self._tick()

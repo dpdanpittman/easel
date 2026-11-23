@@ -102,7 +102,7 @@ class StatusChecks(unittest.TestCase):
 
 class Sky(unittest.TestCase):
     def test_sun_times_at_the_configured_place(self):
-        # tests/kiosk.test.toml: 45 N, 110 W, America/Denver
+        # tests/easel.test.toml: 45 N, 110 W, America/Denver
         rise, sset = sky.sun_times(date(2026, 11, 17))
         self.assertEqual((rise.strftime("%H:%M"), sset.strftime("%H:%M")), ("07:20", "16:50"))
         snap = sky.snapshot(datetime(2026, 11, 17, 13, 0, tzinfo=sky.TZ))
@@ -145,7 +145,7 @@ class ServerRoutes(unittest.TestCase):
     def test_routes(self):
         self.assertEqual(self.get("/static/../server.py")[0], 404)
         self.assertEqual(self.get("/static/screen.js")[0], 200)
-        self.assertEqual(self.get("/static/kiosk.toml")[0], 404)
+        self.assertEqual(self.get("/static/easel.toml")[0], 404)
         self.assertEqual(self.get("/paper/")[0], 404)
         self.assertEqual(self.get("/")[0], 200)
         code, body = self.get("/api/status")

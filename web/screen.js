@@ -1,4 +1,4 @@
-/* The kiosk page. Polls /api/status every 15 s, the work panels every 30 s and /api/mode every second.
+/* The easel page. Polls /api/status every 15 s, the work panels every 30 s and /api/mode every second.
    No network beyond the local server: everything comes from it (the CSP forbids anything else). */
 (function () {
   "use strict";
@@ -121,13 +121,13 @@
   function unreachable() {
     var s = {
       overall: "bad",
-      problems: ["Kiosk server: not answering"],
+      problems: ["Easel server: not answering"],
       session: false,
       branding: last && last.branding,
       checks: [
         {
           key: "srv",
-          label: "Kiosk server",
+          label: "Easel server",
           value: "not answering since " + clockOf(lastOkAt / 1000),
           state: "bad",
         },
@@ -139,15 +139,15 @@
   }
 
   /* ---------- the right panel's scene: the grid (grid.js), when settings `scene.enabled` ---------- */
-  if (window.KioskGrid) KioskGrid.init($("grid"));
+  if (window.EaselGrid) EaselGrid.init($("grid"));
   var sceneOn = null;
   function renderScene(s) {
-    var on = !!(window.KioskGrid && s.grid && s.grid.length !== undefined && s.scene !== false);
+    var on = !!(window.EaselGrid && s.grid && s.grid.length !== undefined && s.scene !== false);
     if (on !== sceneOn) {
       sceneOn = on;
-      if (window.KioskGrid) KioskGrid.show(on);
+      if (window.EaselGrid) EaselGrid.show(on);
     }
-    if (on) KioskGrid.render(s);
+    if (on) EaselGrid.render(s);
   }
 
   function poll() {
@@ -176,7 +176,7 @@
       renderStatus(s);
       renderScene(s);
       renderSky(s.sky);
-      if (window.KioskGrid) KioskGrid.sky(s.sky);
+      if (window.EaselGrid) EaselGrid.sky(s.sky);
     };
     x.onerror = x.ontimeout = fail;
     x.send();
@@ -399,7 +399,7 @@
     else if (t.linear === "off") out.push("Linear not answering");
     if (t.github === "stale" && t.github_at) out.push("PRs as of " + clockOf(t.github_at));
     else if (t.github === "off") out.push("PRs not answering");
-    if (taskFails && lastTasksAt) out.push("kiosk server not answering since " + clockOf(lastTasksAt / 1000));
+    if (taskFails && lastTasksAt) out.push("easel server not answering since " + clockOf(lastTasksAt / 1000));
     return out.join(" · ");
   }
   var lastTasks = null,
@@ -525,7 +525,7 @@
 
   /* ---------- Sizing and auto-scroll: nothing is hidden silently, nothing moves for a few pixels. Layout first,
      motion last (rules in fit.js):
-     - In work hours the task list comes first in the left column (KioskFit.allocate): it shows all
+     - In work hours the task list comes first in the left column (EaselFit.allocate): it shows all
        its rows while In flight keeps its minimum (3 waiting rows); In flight takes the rest and each of its groups
        (Waiting on you, Running now, Just finished) moves through its rows when they do not all fit. The task list
        moves only as the last resort, when even that minimum leaves it too little room.
@@ -535,7 +535,7 @@
        at the bottom, then glides back to the top: calmer than a continuous crawl, the text is still while it is
        read. With prefers-reduced-motion it jumps a page at a time (every 8 s). No fonts are shrunk.
      Measured after every data refresh, layout change and resize, and every 5 s. */
-  var Fit = window.KioskFit;
+  var Fit = window.EaselFit;
   var ROW_HOLD_MS = 3500,
     STEP_MS = 700,
     END_HOLD_MS = 6000,
@@ -855,7 +855,7 @@
       sub = "not current: last updated " + (d.block_at ? fmtDay.format(new Date(d.block_at * 1000)) + ", " +
         clockOf(d.block_at) : "over 18 hours ago");
     else sub = "no In flight block yet";
-    if (flightFails && lastFlightAt) sub += " · kiosk server not answering since " + clockOf(lastFlightAt / 1000);
+    if (flightFails && lastFlightAt) sub += " · easel server not answering since " + clockOf(lastFlightAt / 1000);
     $("flightsub").textContent = sub;
     var gh = $("flightgh");
     gh.className = "flightgh";
@@ -928,7 +928,7 @@
     var nowTs = (d.now || Date.now() / 1000) + (Date.now() - lastDoneAt) / 1000;
     $("donecount").textContent = "· " + (d.count || 0);
     var notes = (d.notes || []).slice();
-    if (doneFails && lastDoneAt) notes.push("kiosk server not answering since " + clockOf(lastDoneAt / 1000));
+    if (doneFails && lastDoneAt) notes.push("easel server not answering since " + clockOf(lastDoneAt / 1000));
     $("donenote").textContent = notes.join(" · ");
     (d.items || []).forEach(function (it) {
       var li = document.createElement("li");

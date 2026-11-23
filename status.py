@@ -1,6 +1,6 @@
 """The status strip: reads unit status, a few state files and file mtimes. Never runs a job, never reads content.
 
-The tiles come from settings `status.tiles`, in order (kiosk.example.toml lists every type). collect() makes two
+The tiles come from settings `status.tiles`, in order (easel.example.toml lists every type). collect() makes two
 systemctl calls (user units) and a handful of stat() calls; server.py caches the result for 10 s.
 Every check returns {"key", "label", "value", "state"} with state "ok", "warn", "bad" or "info".
 Values are short words and numbers only: no message text, nothing private.
@@ -227,7 +227,7 @@ def check_linear(now, feed):
 
 
 def check_github(now, feeds):
-    """GitHub: the oldest last good fetch of the kiosk's gh searches (open PRs, ticket PRs, merged PRs). Green under
+    """GitHub: the oldest last good fetch of the easel's gh searches (open PRs, ticket PRs, merged PRs). Green under
     10 min, amber under 1 h, red after that or when the last attempt of any of them failed ("failing")."""
     live = [f for f in feeds or () if not (f.get("status") == "pending" and not f.get("at"))]
     if not live:

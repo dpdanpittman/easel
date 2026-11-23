@@ -1,4 +1,4 @@
-"""Background agents on the kiosk, from the Claude Code harness itself.
+"""Background agents on the easel, from the Claude Code harness itself.
 
 "Running now" and "Just finished" could be lines the assistant types into the notes file, but it forgets or types
 them late. So a hook script (scripts/agents-hook.py, a thin wrapper around `hook_main` here) records every agent
@@ -286,7 +286,7 @@ def hook_main(stdin=None, path=None):
             return 0
         record(ev, path or STATE)
     except Exception as e:                                  # never block or fail the tool call
-        print("kiosk-agents-hook: %s" % type(e).__name__, file=sys.stderr)
+        print("easel-agents-hook: %s" % type(e).__name__, file=sys.stderr)
     return 0
 
 
@@ -320,7 +320,7 @@ def last_word(e, stat=os.stat):
 
 
 def view(state, now, prefixes=None, stat=os.stat):
-    """The state -> {"running": [...], "finished": [...], "hidden": n not work} for the kiosk (work only, depth 1).
+    """The state -> {"running": [...], "finished": [...], "hidden": n not work} for the easel (work only, depth 1).
     running item: {"text", "ts" (start), "id", "quiet_since" (epoch, only when quiet), "source": "harness"};
     finished item: {"text", "ts" (finish), "id", "source": "harness"}, newest first. Never raises on odd entries."""
     prefixes = frozenset(prefixes) if prefixes else FALLBACK_PREFIXES

@@ -36,7 +36,7 @@ def start(handler, kind="local", names=()):
 
 
 class Gate(unittest.TestCase):
-    NAMES = ("100.75.123.68", "kiosk-box.example.internal", "kiosk-box")
+    NAMES = ("100.75.123.68", "easel-box.example.internal", "easel-box")
 
     def test_local(self):
         self.assertEqual(remote.gate("local", "127.0.0.1", "/", "127.0.0.1:8090", 8090), 0)
@@ -48,7 +48,7 @@ class Gate(unittest.TestCase):
         g = lambda peer, path="/remote", host="100.75.123.68:8090": remote.gate(   # noqa: E731
             "remote", peer, path, host, 8090, self.NAMES)
         self.assertEqual(g("100.66.102.44"), 0)
-        self.assertEqual(g("100.66.102.44", host="kiosk-box.example.internal:8090"), 0)
+        self.assertEqual(g("100.66.102.44", host="easel-box.example.internal:8090"), 0)
         self.assertEqual(g("100.66.102.44", "/api/control"), 0)
         self.assertEqual(g("100.66.102.44", "/static/remote.js"), 0)
         for path in ("/", "/api/tasks", "/api/status", "/api/mode", "/api/inflight", "/api/done", "/static/screen.js"):
@@ -191,7 +191,7 @@ class Server(unittest.TestCase):
         return out
 
     def act(self, action, **args):
-        code, body, _ = self.req("/api/control", "POST", {"action": action, "args": args}, {"X-Kiosk-Remote": "1"})
+        code, body, _ = self.req("/api/control", "POST", {"action": action, "args": args}, {"X-Easel-Remote": "1"})
         return code, json.loads(body or b"{}")
 
     def mode(self):
@@ -200,12 +200,12 @@ class Server(unittest.TestCase):
     def test_csrf(self):
         good = {"action": "panel.set", "args": {"panel": "tasks"}}
         self.assertEqual(self.req("/api/control", "POST", good)[0], 403)                       # no header
-        self.assertEqual(self.req("/api/control", "POST", good, {"X-Kiosk-Remote": "0"})[0], 403)
+        self.assertEqual(self.req("/api/control", "POST", good, {"X-Easel-Remote": "0"})[0], 403)
         self.assertEqual(self.req("/api/control", "POST", raw=b"action=panel.set", headers={
-            "X-Kiosk-Remote": "1", "Content-Type": "application/x-www-form-urlencoded"})[0], 403)
-        self.assertEqual(self.req("/api/control", "POST", good, {"X-Kiosk-Remote": "1",
+            "X-Easel-Remote": "1", "Content-Type": "application/x-www-form-urlencoded"})[0], 403)
+        self.assertEqual(self.req("/api/control", "POST", good, {"X-Easel-Remote": "1",
                                                                  "Origin": "http://evil.example"})[0], 403)
-        self.assertEqual(self.req("/api/control", "POST", good, {"X-Kiosk-Remote": "1",
+        self.assertEqual(self.req("/api/control", "POST", good, {"X-Easel-Remote": "1",
                                                                  "Sec-Fetch-Site": "cross-site"})[0], 403)
         code, _, hdrs = self.req("/api/control", "OPTIONS")
         self.assertEqual(code, 405)
@@ -213,10 +213,10 @@ class Server(unittest.TestCase):
         self.assertEqual(self.req("/api/control")[0], 404)                                     # GET does nothing
         self.assertEqual(self.mode()["panel"], "auto")
         self.assertEqual(self.req("/api/control", "POST", good, {
-            "X-Kiosk-Remote": "1", "Origin": self.base, "Sec-Fetch-Site": "same-origin"})[0], 200)
+            "X-Easel-Remote": "1", "Origin": self.base, "Sec-Fetch-Site": "same-origin"})[0], 200)
         self.assertEqual(self.mode()["panel"], "tasks")
         self.assertEqual(self.req("/api/control", "POST", raw=b"x" * 5000, headers={
-            "X-Kiosk-Remote": "1", "Content-Type": "application/json"})[0], 400)
+            "X-Easel-Remote": "1", "Content-Type": "application/json"})[0], 400)
         self.assertEqual(self.act("nope.nope")[0], 400)
         self.assertEqual(self.act("x")[0], 400)
 

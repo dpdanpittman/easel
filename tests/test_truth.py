@@ -1,4 +1,4 @@
-"""Offline tests for the kiosk's state from sources of truth: task state lines derived from Linear, PRs and finished lines (derive.py, tasks.derive_states); background
+"""Offline tests for the easel's state from sources of truth: task state lines derived from Linear, PRs and finished lines (derive.py, tasks.derive_states); background
 agents recorded by the harness hook (agents.py); the merge in /api/inflight (inflight.merge_agents); the work-only rule.
 
 Run: python3 -m unittest discover -s tests
@@ -364,7 +364,7 @@ class Hook(unittest.TestCase):
                 self.assertEqual(agents.hook_main(io.StringIO(raw), self.path), 0)
             finally:
                 sys.stderr, agents.LOCK_WAIT_S = old, old_wait
-        self.assertEqual(err.getvalue(), "kiosk-agents-hook: TimeoutError\n")
+        self.assertEqual(err.getvalue(), "easel-agents-hook: TimeoutError\n")
 
 
 class ViewAndWorkRule(unittest.TestCase):
@@ -378,11 +378,11 @@ class ViewAndWorkRule(unittest.TestCase):
 
     def test_work_only(self):
         v = self.view(self.entry("a", "OPS-577 apply on merge"),
-                      self.entry("b", "Kiosk: state from Linear [work]"),
+                      self.entry("b", "Easel: state from Linear [work]"),
                       self.entry("c", "Christmas list ideas"),                       # personal: never shown
                       self.entry("d", "chess blunder check"),
                       self.entry("e", "UTF-8 cleanup of notes"))                     # UTF is no team key
-        self.assertEqual(sorted(x["text"] for x in v["running"]), sorted(["OPS-577 apply on merge", "Kiosk: state from Linear"]))
+        self.assertEqual(sorted(x["text"] for x in v["running"]), sorted(["OPS-577 apply on merge", "Easel: state from Linear"]))
         self.assertEqual(v["hidden"], 3)
 
     def test_prefixes_from_linear(self):
@@ -439,15 +439,15 @@ class InflightMerge(unittest.TestCase):
         self.assertEqual(m["counts"]["running"], 2)
 
     def test_hand_running_line_for_an_agent_the_harness_saw_finish(self):
-        block = self.hand(["R. 11:31 Kiosk: state from Linear and GitHub [work]"])
-        h = self.harness(finished=[{"text": "Kiosk: state from Linear and GitHub", "ts": at(11, 44), "id": "k"}])
+        block = self.hand(["R. 11:31 Easel: state from Linear and GitHub [work]"])
+        h = self.harness(finished=[{"text": "Easel: state from Linear and GitHub", "ts": at(11, 44), "id": "k"}])
         m = inflight.merge_agents(block, h)
         self.assertEqual(m["running"], [])
-        self.assertEqual(m["finished"][0]["text"], "Kiosk: state from Linear and GitHub")
+        self.assertEqual(m["finished"][0]["text"], "Easel: state from Linear and GitHub")
 
     def test_work_tag_not_shown_on_hand_lines(self):
-        m = inflight.merge_agents(self.hand(["R. 11:33 Kiosk: state from hooks [work]"]), self.harness())
-        self.assertEqual(m["running"][0]["text"], "Kiosk: state from hooks")
+        m = inflight.merge_agents(self.hand(["R. 11:33 Easel: state from hooks [work]"]), self.harness())
+        self.assertEqual(m["running"][0]["text"], "Easel: state from hooks")
 
     def test_stale_hand_block_harness_still_shows(self):
         block = self.hand(["R. 08:00 OPS-1 x"], header="2026-11-19 08:00")

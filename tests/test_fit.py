@@ -1,4 +1,4 @@
-"""Offline tests for the kiosk's sizing rules (web/fit.js, run with node; skipped when node is missing).
+"""Offline tests for the easel's sizing rules (web/fit.js, run with node; skipped when node is missing).
 
 THE THRESHOLD:
 a list moves only when at least one whole row cannot be shown; less than a row is absorbed, boxes end on rows.
@@ -117,7 +117,7 @@ class Wiring(unittest.TestCase):
         self.assertLess(html.index('src="/static/fit.js"'), html.index('src="/static/screen.js"'))
         with open(os.path.join(os.path.dirname(HERE), "web", "screen.js")) as f:
             src = f.read()
-        self.assertIn("var Fit = window.KioskFit;", src)
+        self.assertIn("var Fit = window.EaselFit;", src)
         self.assertIn('Fit.decide(max, rowPx) !== "scroll"', src)
 
 

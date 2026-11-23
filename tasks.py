@@ -54,7 +54,7 @@ STATE_MAX = 70
 TITLE_MAX = 70
 TAIL_START = 256 * 1024          # first tail read; doubled until a block is found or the whole file is read
 # test-only: show the list (and the In flight panel) at any hour. Off by default and never set in the unit.
-FORCE_ENV = "KIOSK_TASKS_ANYTIME"
+FORCE_ENV = "EASEL_TASKS_ANYTIME"
 EMPTY = {"show": False, "items": [], "total": 0, "done": 0}
 
 _HEADING = re.escape(_C["notes"]["tasks_heading"].strip().upper())
@@ -674,7 +674,7 @@ def http_post(key, body, timeout=20):
     """POST one GraphQL request; urllib honours HTTPS_PROXY. The key goes only in Authorization."""
     req = urllib.request.Request(LINEAR_URL, data=json.dumps(body).encode(), method="POST",
                                  headers={"Authorization": key, "Content-Type": "application/json",
-                                          "User-Agent": "kiosk"})
+                                          "User-Agent": "easel"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = r.read(MAX_BODY + 1)
     if len(data) > MAX_BODY:

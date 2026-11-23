@@ -33,7 +33,7 @@
     hz: "#ff7cc8",
     teal: "#38e4dc", // teal: the brain and its line 
     tealDim: "#1f8c96",
-    green: "#5fcf8a", // green: the living things and the data (the kiosk's own green)
+    green: "#5fcf8a", // green: the living things and the data (the easel's own green)
     greenHi: "#c4ffd8",
     bad: "#ff5d52",
     beam: "#fff1da",
@@ -1074,5 +1074,5 @@
       loop = null;
     }
   }
-  window.KioskGrid = { init: init, render: render, sky: sky, show: show };
+  window.EaselGrid = { init: init, render: render, sky: sky, show: show };
 })();

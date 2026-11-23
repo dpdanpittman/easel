@@ -111,12 +111,12 @@ class Join(unittest.TestCase):
                          ("Priya (his #24)", ""))
 
     def test_r_line_marks_running(self):
-        d = payload(flight(lines=["R. 09:30 ACME-4810: rehearsal scripts build", "R. 09:31 kiosk scroll"]))
+        d = payload(flight(lines=["R. 09:30 ACME-4810: rehearsal scripts build", "R. 09:31 easel scroll"]))
         it = by_id(d)
         self.assertEqual((it["ACME-4810"]["active"], it["ACME-4810"]["running"]), ("rehearsal scripts build", True))
         self.assertEqual(d["active"], 1)
         # hand IN PROGRESS with no R line is not shown while the block is current
-        d = payload(flight(lines=["R. 09:31 kiosk scroll"]))
+        d = payload(flight(lines=["R. 09:31 easel scroll"]))
         self.assertEqual((by_id(d)["ACME-4810"]["active"], by_id(d)["ACME-4810"]["running"]), ("", False))
         self.assertEqual(d["active"], 0)
 

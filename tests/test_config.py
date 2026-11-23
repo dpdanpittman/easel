@@ -27,7 +27,7 @@ class Settings(unittest.TestCase):
         self.assertFalse(cfg["remote"]["enabled"])
 
     def test_example_file_loads(self):
-        cfg = config.load(os.path.join(ROOT, "kiosk.example.toml"))
+        cfg = config.load(os.path.join(ROOT, "easel.example.toml"))
         self.assertTrue(cfg["linear"]["workspaces"])
         for ws in cfg["linear"]["workspaces"]:
             self.assertIsInstance(ws["key_cmd"], list)
@@ -43,4 +43,4 @@ class Settings(unittest.TestCase):
 
     def test_test_settings_are_in_use(self):
         self.assertEqual(config.get()["branding"]["owner"], "Sam")
-        self.assertTrue(config.find().endswith("kiosk.test.toml"))
+        self.assertTrue(config.find().endswith("easel.test.toml"))

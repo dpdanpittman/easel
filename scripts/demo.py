@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -I
-"""Run the kiosk on invented data, with no network and no keys: for screenshots, layout checks and trying it out.
+"""Run the easel on invented data, with no network and no keys: for screenshots, layout checks and trying it out.
 
     python3 scripts/demo.py [--port 8099] [--off-hours]
 
@@ -17,12 +17,12 @@ import time
 from datetime import datetime, timedelta, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TMP = tempfile.mkdtemp(prefix="kiosk-demo-")
+TMP = tempfile.mkdtemp(prefix="easel-demo-")
 TZ_NAME = "America/Chicago"
 
 SETTINGS = """
 [branding]
-title = "Work board"
+title = "Easel"
 assistant = "Agent"
 owner = "Sam"
 
@@ -86,13 +86,13 @@ def main():
     tz = ZoneInfo(TZ_NAME)
     now = datetime.now(tz).replace(second=0, microsecond=0)
     notes = os.path.join(TMP, "sketchbook.md")
-    cfg = os.path.join(TMP, "kiosk.toml")
+    cfg = os.path.join(TMP, "easel.toml")
     with open(cfg, "w") as f:
         f.write(SETTINGS % {"tz": TZ_NAME, "notes": notes, "tmp": TMP})
-    os.environ["KIOSK_CONFIG"] = cfg
+    os.environ["EASEL_CONFIG"] = cfg
     if not args.off_hours:
-        os.environ["KIOSK_TASKS_ANYTIME"] = "1"
-    os.environ["KIOSK_PORT"] = str(args.port)
+        os.environ["EASEL_TASKS_ANYTIME"] = "1"
+    os.environ["EASEL_PORT"] = str(args.port)
     os.makedirs(os.path.join(TMP, "standup"))
     with open(os.path.join(TMP, "standup", "posted-%s.json" % now.date().isoformat()), "w") as f:
         json.dump({"state": "posted", "ts": int((now.replace(hour=9, minute=31)).timestamp())}, f)
@@ -249,7 +249,7 @@ def main():
                                            linear=lin, ticket_prs=ticket_prs)
     server._tasks_src = tasks.Source(linear=lin, flight=lambda: server._inflight_src.flight(), prs=ticket_prs)
     server._done_src = done.Source(linear=lin, merged=merged_prs, ticket_prs=ticket_prs)
-    print("kiosk demo: http://127.0.0.1:%d/ (invented data, files in %s)" % (args.port, TMP), flush=True)
+    print("easel demo: http://127.0.0.1:%d/ (invented data, files in %s)" % (args.port, TMP), flush=True)
     time.sleep(0.1)
     server.main()
 

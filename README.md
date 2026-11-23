@@ -1,16 +1,17 @@
-# kiosk
+# easel
 
-A wall board for a developer who works with an AI coding assistant. During work hours it answers three questions at a glance, from across the room: **what is on my plate, what is waiting on me, and what is running right now.**
+A wall-screen work board for you and your AI agent. Easel is a board for a developer who works with an AI coding assistant. During work hours it answers three questions at a glance, from across the room: **what is on my plate, what is waiting on me, and what is running right now.**
 
-It reads Linear and GitHub (read-only), a plain notes file the assistant keeps, and a record of the assistant's background agents, and shows them on a 1920x1080 page that a kiosk browser keeps on a monitor all day. It never writes to Linear or GitHub.
+It reads Linear and GitHub (read-only), a plain notes file the assistant keeps, and a record of the assistant's background agents, and shows them on a 1920x1080 page that a kiosk browser (full screen, no controls) keeps on a monitor all day. It never writes to Linear or GitHub.
 
-![The kiosk in work hours, on invented data](docs/screenshot.png)
+![Easel in work hours, on invented data](docs/screenshot.png)
 
 _The screenshot is made from invented data with `scripts/demo.py` and `scripts/screenshot.py` (headless Chromium)._
 
 - Author: Dan Pittman (https://github.com/dpdanpittman)
 - License: AGPL-3.0 (see [LICENSE](LICENSE))
-- Pairs with [Essence](https://github.com/dpdanpittman/essence): the notes file is Essence's sketchbook, the place the assistant writes what is in flight. See [The notes file](#the-notes-file).
+- Pairs with [Essence](https://github.com/dpdanpittman/essence): easel reads a sketchbook's `current.md` ([Essence's sketchbook](https://github.com/dpdanpittman/essence/blob/main/docs/sketchbook.md)), namely its In flight block and its work list block. Any append-only notes file written in that grammar works. See [The notes file](#the-notes-file).
+- The name: Essence speaks in painting terms (portrait, landscapes, strokes, brushes, sketchbook). The easel is where the work stands, in view, while it is being made.
 
 ## What it shows
 
@@ -93,9 +94,9 @@ The last good Linear and GitHub answers are saved under `server.state_dir` (mode
 ## Safety model
 
 - **Read-only.** Nothing is ever written to Linear or GitHub. Use Linear personal API keys created read-only.
-- **No secret is stored.** The settings file holds a _command_ per workspace (`key_cmd`, run without a shell, for example `pass show linear/acme-read` or `op read op://...`). The key it prints is held in memory only, sent only in the Authorization header, never logged, and dropped and looked up again after a 401 or 403. The settings loader refuses a workspace that has a `key` field. GitHub goes through `gh`; the kiosk never sees that token.
+- **No secret is stored.** The settings file holds a _command_ per workspace (`key_cmd`, run without a shell, for example `pass show linear/acme-read` or `op read op://...`). The key it prints is held in memory only, sent only in the Authorization header, never logged, and dropped and looked up again after a 401 or 403. The settings loader refuses a workspace that has a `key` field. GitHub goes through `gh`; easel never sees that token.
 - **Untrusted text.** Ticket titles, PR titles, notes lines and agent descriptions are treated as untrusted: links, backticks and control characters are stripped, lines are cut, and the page only ever sets `textContent`.
-- **Nothing loaded from off the box.** The server sends a Content-Security-Policy that allows only itself; `scripts/kiosk-browser.sh` starts Chromium so it cannot resolve any host but localhost.
+- **Nothing loaded from off the box.** The server sends a Content-Security-Policy that allows only itself; `scripts/easel-browser.sh` starts Chromium so it cannot resolve any host but localhost.
 - **Quiet logs.** At most one journal line an hour per source on failure, with the error type only.
 - **Private office.** The task list has no word filter: put the monitor where only you read it.
 
@@ -103,17 +104,17 @@ The last good Linear and GitHub answers are saved under `server.state_dir` (mode
 
 Requirements: Linux with systemd, Python 3.11+ (standard library only), the `gh` CLI logged in (`gh auth login`) if you want GitHub, and for the wall monitor `cage` and Chromium. Node is needed only for the fit tests.
 
-1. Clone the repository, for example to `~/src/kiosk`.
-2. Copy `kiosk.example.toml` to `~/.config/kiosk/kiosk.toml` and edit it: timezone and work hours, your Linear workspaces with a `key_cmd` each, your GitHub orgs, the notes file path, the tiles and scene nodes you want.
+1. Clone the repository, for example to `~/src/easel`.
+2. Copy `easel.example.toml` to `~/.config/easel/easel.toml` and edit it: timezone and work hours, your Linear workspaces with a `key_cmd` each, your GitHub orgs, the notes file path, the tiles and scene nodes you want.
 3. Check that each `key_cmd` prints one key and nothing else: run the command by hand.
 4. Try it: `python3 server.py`, then open http://127.0.0.1:8090/ (or run `python3 scripts/demo.py` first to see it on invented data).
-5. Run it as a service: copy `systemd/kiosk-server.service` to `~/.config/systemd/user/`, fix the path, `systemctl --user enable --now kiosk-server.service`.
-6. For a wall monitor: `systemd/kiosk-browser.service` (a system unit: cage + Chromium on tty1 as your user; set the user and path).
-7. Optional: background agents (add `scripts/agents-hook.py` to Claude Code's hooks, see the script's docstring), the remote (`[remote] enabled = true`), screen power (`[power] enabled = true` and `systemd/kiosk-power.timer`).
+5. Run it as a service: copy `systemd/easel-server.service` to `~/.config/systemd/user/`, fix the path, `systemctl --user enable --now easel-server.service`.
+6. For a wall monitor: `systemd/easel-browser.service` (a system unit: cage + Chromium on tty1 as your user; set the user and path).
+7. Optional: background agents (add `scripts/agents-hook.py` to Claude Code's hooks, see the script's docstring), the remote (`[remote] enabled = true`), screen power (`[power] enabled = true` and `systemd/easel-power.timer`).
 
 ## The notes file
 
-The notes file is a plain, append-only text file: the assistant (or you) adds to the end and never rewrites. It pairs with Essence's sketchbook: the sketchbook is where the assistant keeps what is in flight and the work list, and the kiosk reads exactly two kinds of block from it. Everything else in the file is ignored.
+The notes file is a plain, append-only text file: the assistant (or you) adds to the end and never rewrites. It pairs with [Essence's sketchbook](https://github.com/dpdanpittman/essence/blob/main/docs/sketchbook.md): point `notes` at a sketchbook's `current.md`, where the assistant keeps what is in flight and the work list, and easel reads exactly two kinds of block from it. Any other append-only file in the same grammar works just as well. Everything else in the file is ignored.
 
 The rules below are the parser's (`inflight.py`, `tasks.py`).
 

@@ -1,5 +1,5 @@
-# kiosk.example.toml: every setting the kiosk reads, with invented example values.
-# Copy it to ~/.config/kiosk/kiosk.toml (or ./kiosk.toml, or point KIOSK_CONFIG at it) and edit.
+# easel.example.toml: every setting easel reads, with invented example values.
+# Copy it to ~/.config/easel/easel.toml (or ./easel.toml, or point EASEL_CONFIG at it) and edit.
 # Never put a key or token in this file: Linear keys come from a command at run time (key_cmd), GitHub from the
 # gh CLI's own login. The server refuses a workspace that has a "key" field.
 
@@ -22,7 +22,7 @@ always_show = false             # true: no off-hours view, the work panels show 
 [notes]
 # The sketchbook: an append-only notes file that holds the IN FLIGHT and the WORK TASKS blocks (README: "The notes
 # file"). Leave empty to run from Linear and GitHub alone.
-path = "~/notes/sketchbook.md"
+path = "~/.claude/essence/sketchbook/current.md"   # an Essence sketchbook; any append-only file in the same grammar works
 tasks_heading = "WORK TASKS"    # "- 2026-01-05 09:00 WORK TASKS:" (also "SAM'S WORK TASKS")
 
 # One block per Linear workspace. key_cmd is a command (a list, run without a shell) that prints a READ-ONLY
@@ -35,7 +35,7 @@ key_cmd = ["pass", "show", "linear/acme-read"]
 [[linear.workspaces]]
 name = "globex"
 label = "Globex"
-key_cmd = ["op", "read", "op://Kiosk/Linear Globex read/credential"]
+key_cmd = ["op", "read", "op://Easel/Linear Globex read/credential"]
 
 [github]
 enabled = true
@@ -97,7 +97,7 @@ longitude = -74.0
 [server]
 host = "127.0.0.1"
 port = 8090
-state_dir = "~/.local/state/kiosk"   # the last good Linear/GitHub answers (no secrets), the agents record
+state_dir = "~/.local/state/easel"   # the last good Linear/GitHub answers (no secrets), the agents record
 
 [remote]
 # A phone page that switches the left panel and holds the monitor on or off. Off by default. A second listener

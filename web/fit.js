@@ -1,5 +1,5 @@
-/* The kiosk: the pure sizing rules for the kiosk's lists (no DOM here, so node can test them:
-   tests/test_fit.py). Loaded before screen.js; exposes window.KioskFit (module.exports under node).
+/* The easel: the pure sizing rules for the easel's lists (no DOM here, so node can test them:
+   tests/test_fit.py). Loaded before screen.js; exposes window.EaselFit (module.exports under node).
 
    A list that moves for a few pixels is worse than one that does not move at all. So: layout first, motion last.
    - Boxes are sized from their content and always end on a row boundary (never a half-cut row).
@@ -104,5 +104,5 @@
     rowStops: rowStops,
   };
   if (typeof module === "object" && module.exports) module.exports = api;
-  else root.KioskFit = api;
+  else root.EaselFit = api;
 })(this);

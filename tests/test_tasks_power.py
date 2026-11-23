@@ -191,7 +191,7 @@ class Hours(unittest.TestCase):
             self.assertEqual(tasks.payload(Src(), self.at(2026, 11, 21, 10, 0))["total"], 1)
 
     def test_unit_never_sets_the_override(self):
-        unit = os.path.join(os.path.dirname(HERE), "systemd", "kiosk-server.service")
+        unit = os.path.join(os.path.dirname(HERE), "systemd", "easel-server.service")
         with open(unit) as f:
             self.assertNotIn(tasks.FORCE_ENV, f.read())
 

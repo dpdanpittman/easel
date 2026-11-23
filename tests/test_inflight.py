@@ -30,9 +30,9 @@ BLOCK = """- 2026-11-19 09:00 IN FLIGHT (current):
   W. OPS-577: apply the staging stack and create the CI tokens
   W. old token: delete the copy in the team vault
   R. 12:33 ACME-4810 scripts build
-  R. 12:42 kiosk In flight panel
+  R. 12:42 easel In flight panel
   F. 12:29 infra#24 merged
-  F. 12:41 kiosk task list fix live
+  F. 12:41 easel task list fix live
   a stray indented note
 - 2026-11-19 12:46 next notes entry mentions "- 2026-11-19 13:00 IN FLIGHT" in quotes
 """.split("\n")
@@ -51,9 +51,9 @@ class Parser(unittest.TestCase):
                          ["OPS-577: apply the staging stack and create the CI tokens",
                           "old token: delete the copy in the team vault"])
         self.assertEqual([(r["text"], r["ts"]) for r in b["running"]],
-                         [("ACME-4810 scripts build", ts(12, 33)), ("kiosk In flight panel", ts(12, 42))])
+                         [("ACME-4810 scripts build", ts(12, 33)), ("easel In flight panel", ts(12, 42))])
         # newest first, whatever the written order
-        self.assertEqual([f["text"] for f in b["finished"]], ["kiosk task list fix live", "infra#24 merged"])
+        self.assertEqual([f["text"] for f in b["finished"]], ["easel task list fix live", "infra#24 merged"])
         self.assertNotIn("stray", json.dumps(b))
         self.assertNotIn("older", json.dumps(b))
 
@@ -130,8 +130,8 @@ class Parser(unittest.TestCase):
   W. OPS-576: say whether to put the central data repo forward
   W. old token: delete the copy left in the team vault
   R. 12:33 ACME-4810 scripts build
-  R. 12:43 kiosk In flight panel
-  F. 12:41 kiosk task list: no hidden rows, numbered 1 to N
+  R. 12:43 easel In flight panel
+  F. 12:41 easel task list: no hidden rows, numbered 1 to N
   F. 12:34 infra#26 updated, plan shows 10 imports
   F. 12:29 infra#24 merged
   F. 12:23 OPS-580 closed, log ingest fixed

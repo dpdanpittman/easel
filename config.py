@@ -1,17 +1,17 @@
-"""The kiosk's settings: one TOML file, read once at start (standard library only, `tomllib`).
+"""The easel's settings: one TOML file, read once at start (standard library only, `tomllib`).
 
 Where the file is looked for, first match wins:
-  1. the path in the environment variable KIOSK_CONFIG;
-  2. ./kiosk.toml (the folder the server is started from);
-  3. ~/.config/kiosk/kiosk.toml.
+  1. the path in the environment variable EASEL_CONFIG;
+  2. ./easel.toml (the folder the server is started from);
+  3. ~/.config/easel/easel.toml.
 No file: the built-in defaults below (a board with no Linear workspaces and no GitHub orgs: it runs, and shows
-nothing but the status strip). `kiosk.example.toml` documents every key.
+nothing but the status strip). `easel.example.toml` documents every key.
 
 No secret is ever kept in the file. A Linear workspace names a COMMAND (`key_cmd`) that prints its read-only key
 when the server needs it (a password manager's CLI, for example); the key lives in memory only. GitHub is read
-through the `gh` CLI's own login; the kiosk never sees that token.
+through the `gh` CLI's own login; the easel never sees that token.
 
-Every module reads its settings through `get()`; tests point KIOSK_CONFIG at tests/kiosk.test.toml before importing
+Every module reads its settings through `get()`; tests point EASEL_CONFIG at tests/easel.test.toml before importing
 anything (tests/_env.py).
 """
 import copy
@@ -21,7 +21,7 @@ import tomllib
 DEFAULTS = {
     "branding": {
         # the page title and the verdict tile's label
-        "title": "Kiosk",
+        "title": "Easel",
         "board_label": "Board",
         # who keeps the In flight block and runs the background agents (the status tile and the scene's figure)
         "assistant": "Agent",
@@ -55,7 +55,7 @@ DEFAULTS = {
         "orgs": [],
     },
     "status": {
-        # the strip's tiles, in order (see kiosk.example.toml for every type)
+        # the strip's tiles, in order (see easel.example.toml for every type)
         "tiles": [{"type": "failed"}, {"type": "disk", "path": "/"}, {"type": "uptime"}],
     },
     "session": {
@@ -85,7 +85,7 @@ DEFAULTS = {
     "server": {
         "host": "127.0.0.1",
         "port": 8090,
-        "state_dir": "~/.local/state/kiosk",
+        "state_dir": "~/.local/state/easel",
     },
     "remote": {
         # a phone page on a private network (a second listener that serves only the remote)
@@ -120,10 +120,10 @@ def _merge(base, over):
 
 def find():
     """The settings file in use, or None."""
-    env = os.environ.get("KIOSK_CONFIG")
+    env = os.environ.get("EASEL_CONFIG")
     if env:
         return os.path.expanduser(env)
-    for p in ("kiosk.toml", os.path.expanduser("~/.config/kiosk/kiosk.toml")):
+    for p in ("easel.toml", os.path.expanduser("~/.config/easel/easel.toml")):
         if os.path.isfile(p):
             return p
     return None
@@ -131,7 +131,7 @@ def find():
 
 def load(path=None):
     """Read and check a settings file -> the full settings dict (defaults filled in). Raises ValueError on a bad
-    file: a kiosk that cannot read its settings should say so at start, not run on half of them."""
+    file: an easel that cannot read its settings should say so at start, not run on half of them."""
     path = path or find()
     data = {}
     if path:

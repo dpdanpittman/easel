@@ -1,9 +1,9 @@
-# The kiosk browser: cage (a one-window Wayland kiosk) on tty1 running Chromium full screen as your user.
+# The easel browser: cage (a one-window Wayland kiosk) on tty1 running Chromium full screen as your user.
 # SYSTEM unit. Install: copy to /etc/systemd/system/, replace YOURUSER and the path, then
-#   sudo systemctl daemon-reload && sudo systemctl enable --now kiosk-browser.service
-# A text login stays on tty2 (Ctrl+Alt+F2). Undo: sudo systemctl disable --now kiosk-browser.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now easel-browser.service
+# A text login stays on tty2 (Ctrl+Alt+F2). Undo: sudo systemctl disable --now easel-browser.service
 [Unit]
-Description=Kiosk: browser on tty1 (cage + Chromium)
+Description=Easel: browser on tty1 (cage + Chromium)
 After=systemd-user-sessions.service plymouth-quit-wait.service
 Conflicts=getty@tty1.service
 After=getty@tty1.service
@@ -26,7 +26,7 @@ UtmpIdentifier=tty1
 UtmpMode=user
 Environment=XDG_SESSION_TYPE=wayland
 # -d: no client decorations; -s: allow VT switching
-ExecStart=/usr/bin/cage -d -s -- /home/YOURUSER/src/kiosk/scripts/kiosk-browser.sh
+ExecStart=/usr/bin/cage -d -s -- /home/YOURUSER/src/easel/scripts/easel-browser.sh
 Restart=always
 RestartSec=5
 RestartSteps=8

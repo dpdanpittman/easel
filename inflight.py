@@ -2,7 +2,7 @@
 
 Work hours only: the same rule as the work task list, `tasks.shown()` (settings `time`, on the server clock), lifted
 only when the remote chooses the "inflight" panel. Outside those hours `payload` returns HIDDEN (show false, nothing
-in it, the notes file and GitHub not even read) and the kiosk shows its off-hours view in this spot. Four groups:
+in it, the notes file and GitHub not even read) and the easel shows its off-hours view in this spot. Four groups:
 
   waiting   things only you can do (notes "W." lines, plus your open non-draft PRs whose checks all pass, judged
             by the newest-run rule of checks.py: a superseded cancelled run does not count)
@@ -17,7 +17,7 @@ starts at column 0 as "- YYYY-MM-DD HH:MM [TZ] IN FLIGHT" (then "(", ":" or the 
     - 2026-01-05 12:45 IN FLIGHT (current):
       W. OPS-577: apply the staging stack and create the CI tokens
       R. 12:33 ACME-4810 scripts build
-      F. 12:41 kiosk task list fix live
+      F. 12:41 easel task list fix live
 
 Item lines are indented and start with "W.", "R." or "F." then text. R and F text starts with "HH:MM" (local time,
 the day of the header; R = start, F = finish). A time later than the header (plus 10 minutes of slack) is taken as

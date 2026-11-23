@@ -16,8 +16,8 @@ import _env  # noqa: E402,F401  (settings for the tests)
 sys.path.insert(0, os.path.dirname(HERE))
 import tasks    # noqa: E402
 
-KEYS = {("kiosk-test-key", "globex"): "lin_api_" + "globexFAKE" * 4,
-        ("kiosk-test-key", "acme"): "lin_api_" + "acmeFAKE" * 4}
+KEYS = {("easel-test-key", "globex"): "lin_api_" + "globexFAKE" * 4,
+        ("easel-test-key", "acme"): "lin_api_" + "acmeFAKE" * 4}
 GLOBEX_KEY, ACME_KEY = KEYS.values()
 
 

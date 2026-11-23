@@ -2,7 +2,7 @@
 
 GitHub keeps old check runs in the rollup after a rerun or a new push (often CANCELLED), and the rollup's own `state`
 counts them: acme-inc/acme#7212 said FAILURE because a gitleaks run was cancelled at 19:46 and rerun green at 19:47.
-So the kiosk never trusts the rollup state when it has the runs themselves:
+So the easel never trusts the rollup state when it has the runs themselves:
 
   1. keep only the NEWEST run of each check, keyed by workflow name + check name (a CheckRun) or by context (a
      commit StatusContext); newest = the latest start (startedAt, else completedAt; a status context's createdAt);

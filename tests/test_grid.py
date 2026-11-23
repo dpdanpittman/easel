@@ -59,7 +59,7 @@ class GridNodes(unittest.TestCase):
             self.assertEqual(n[key]["age"], 70)
 
     def test_unlisted_units_never_light(self):
-        for u in ("kiosk-power.service", "kiosk-server.service", "private.service"):
+        for u in ("easel-power.service", "easel-server.service", "private.service"):
             self.assertNotIn(u, status.GRID_UNITS)
             self.assertTrue(all(n["state"] == "quiet" for n in status.grid_nodes(NOW, {u: unit("active", NOW)})))
 
@@ -124,8 +124,8 @@ class PageWiring(unittest.TestCase):
 
     def test_screen_draws_the_grid(self):
         js = read("screen.js")
-        self.assertIn("KioskGrid.render(s)", js)
-        self.assertIn("KioskGrid.sky(s.sky)", js)
+        self.assertIn("EaselGrid.render(s)", js)
+        self.assertIn("EaselGrid.sky(s.sky)", js)
 
     def test_grid_has_a_spot_for_every_node_it_may_get(self):
         js = read("grid.js")

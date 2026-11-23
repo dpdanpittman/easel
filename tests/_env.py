@@ -1,9 +1,9 @@
-"""Imported first by every test module: the suite runs with tests/kiosk.test.toml, never a real settings file."""
+"""Imported first by every test module: the suite runs with tests/easel.test.toml, never a real settings file."""
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-os.environ["KIOSK_CONFIG"] = os.path.join(HERE, "kiosk.test.toml")
+os.environ["EASEL_CONFIG"] = os.path.join(HERE, "easel.test.toml")
 sys.path.insert(0, os.path.dirname(HERE))
 
 
