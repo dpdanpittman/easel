@@ -73,7 +73,7 @@ A PR's check verdict uses the newest run of each check only (keyed by workflow +
 
 ### Fit and motion
 
-Nothing is hidden silently. Every heading shows the real count. Boxes are sized from their content and end on whole rows. A list moves only when at least one whole row cannot be shown, never for a few pixels: one row at a time (a 0.7 s glide, then 3.5 s still), holding 6 s at the top and bottom. Under reduced motion it pages instead. Fonts are never shrunk. The pure rules live in `web/fit.js` and are tested with node.
+Nothing is hidden silently. Every heading shows the real count. Boxes are sized from their content and end on whole rows. A list moves only when at least one whole row cannot be shown, never for a few pixels: one row at a time (a 0.7 s glide, then 3.5 s still), holding 6 s at the top and bottom. The In flight groups rotate like a conveyor instead: the top row slides up and rejoins at the bottom, every other row moves up one, and the rotation survives the data refreshes; the task list keeps the hold-and-return. Under reduced motion it pages instead. Fonts are never shrunk. The pure rules live in `web/fit.js` and are tested with node.
 
 ### The remote (optional)
 

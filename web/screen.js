@@ -533,7 +533,9 @@
        row is absorbed (the box gets the pixels).
      - When a list does move, it steps one row at a time (a 0.7 s glide, then 3.5 s still), holds 6 s at the top and
        at the bottom, then glides back to the top: calmer than a continuous crawl, the text is still while it is
-       read. With prefers-reduced-motion it jumps a page at a time (every 8 s). No fonts are shrunk.
+       read. The In flight groups rotate like a conveyor instead: the top row slides up and rejoins at the bottom,
+       the offset kept across data refreshes. With prefers-reduced-motion it jumps a page at a time (every 8 s). No
+       fonts are shrunk.
      Measured after every data refresh, layout change and resize, and every 5 s. */
   var Fit = window.EaselFit;
   var ROW_HOLD_MS = 3500,
@@ -633,6 +635,7 @@
     document.body.classList.toggle("alloc", alloc);
     if (alloc) allocWork(byId);
     scrollers.forEach(function (sc) {
+      if (sc.rotate) reapplyRotation(sc);
       var shown = sc.view.offsetParent !== null && sc.view.clientHeight > 0;
       var rows = shown ? rowsOf(sc.list) : { tops: [], bottoms: [] };
       if (shown && !alloc) {
@@ -647,6 +650,7 @@
         // it fits, or less than a whole row is hidden (absorbed above): no motion
         sc.stops = [];
         sc.idx = 0;
+        if (sc.rotate) unrotate(sc);
         place(sc, 0);
         return;
       }
@@ -676,6 +680,44 @@
     if (stops[stops.length - 1] < max - 1) stops.push(max);
     return stops;
   }
+  function rowEls(list) {
+    return Array.prototype.filter.call(list.children, function (c) {
+      return c.offsetHeight > 0 && !c.classList.contains("fquiet");
+    });
+  }
+  function reapplyRotation(sc) {
+    // a re-render rebuilds the list in its natural order: move the same number of rows to the bottom again,
+    // so a 15 s data refresh does not snap the conveyor back to the top
+    var n = sc.list.children.length;
+    if (!sc.rot || n < 2 || sc.list.getAttribute("data-rot") === "" + sc.rot) return;
+    if (sc.list.getAttribute("data-rot") === null) {
+      for (var i = 0; i < sc.rot % n; i++) sc.list.appendChild(sc.list.firstElementChild);
+    }
+    sc.list.setAttribute("data-rot", "" + sc.rot);
+  }
+  function unrotate(sc) {
+    sc.rot = 0;
+    sc.list.removeAttribute("data-rot");
+  }
+  function rotateStep(sc, now) {
+    var rows = rowEls(sc.list);
+    if (rows.length < 2) return;
+    var first = rows[0],
+      h = rows[1].offsetTop - first.offsetTop; // the first row plus the gap after it
+    sc.list.style.transition = "transform " + STEP_MS + "ms ease-in-out";
+    sc.list.style.transform = "translateY(" + -h + "px)";
+    sc.busy = true;
+    setTimeout(function () {
+      // the slide is done: put that row at the bottom and reset the shift with no motion, so nothing jumps
+      sc.list.style.transition = "none";
+      if (first.parentNode === sc.list) sc.list.appendChild(first);
+      sc.list.style.transform = "";
+      sc.rot = (sc.rot || 0) + 1;
+      sc.list.setAttribute("data-rot", "" + sc.rot);
+      sc.busy = false;
+    }, STEP_MS + 30);
+    sc.nextAt = now + STEP_MS + ROW_HOLD_MS;
+  }
   var scrollTimer = 0;
   function stepScrollers() {
     var now = performance.now(),
@@ -685,7 +727,9 @@
       any = true;
       if (now < sc.nextAt) return;
       var last = sc.stops.length - 1;
-      if (reduced()) {
+      if (sc.rotate && !reduced()) {
+        if (!sc.busy) rotateStep(sc, now);
+      } else if (reduced()) {
         sc.idx = sc.idx >= last ? 0 : sc.idx + 1;
         place(sc, 0);
         sc.nextAt = now + PAGE_MS;
@@ -716,7 +760,9 @@
   }
   ["g-wait", "g-run", "g-done", "g-prs"].forEach(function (id) {
     var g = $(id);
-    makeScroller(g.querySelector(".fview"), g.querySelector(".flist"), g);
+    // In flight groups rotate like a conveyor: the top row slides up and rejoins at the bottom, every other row
+    // moves up one; no gliding back to the top. The task list keeps the hold-and-return below.
+    makeScroller(g.querySelector(".fview"), g.querySelector(".flist"), g).rotate = true;
   });
   makeScroller($("taskview"), $("tasklist"), $("taskpanel"));
   window.addEventListener("resize", function () {
@@ -780,6 +826,7 @@
     var g = $(id),
       ul = g.querySelector(".flist");
     ul.textContent = "";
+    ul.removeAttribute("data-rot"); // rebuilt in natural order: the conveyor offset is re-applied on measure
     // the real count, always; "12 of 15" only when the server
     // capped the group (ITEMS_MAX), never because of the space: rows that do not fit scroll instead
     var n = Math.max(total || 0, items.length);
