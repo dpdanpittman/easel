@@ -42,6 +42,9 @@ enabled = true
 gh = "gh"                       # the GitHub CLI; it must already be logged in (gh auth login)
 author = "@me"                  # whose PRs: "@me" (the gh login) or a login
 orgs = ["acme-inc", "globex-labs"]
+# A PR someone else wrote that you approved, still open and unmerged this many hours after your approval, gets a
+# Waiting on you line ("#88 api: approved 3d ago, not merged · behind"). 0 turns it off.
+approved_after_h = 48
 
 [status]
 # The strip's tiles, in order. Types:

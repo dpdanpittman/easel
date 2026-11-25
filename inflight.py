@@ -42,6 +42,17 @@ those PRs is merged and none is open (a closed-unmerged PR, a superseded version
 notes file: it goes away by itself when the ticket leaves In Review or closes. A current hand W line naming the
 ticket wins (no duplicate). Fails closed: no Linear answer for that workspace, no PR answer, attachments not known (an
 older saved copy), or any linked PR whose state is not known -> no automatic line; the hand lines are never touched.
+
+Source D, computed (`auto_approved`): a PR someone else wrote can sit unmerged for days after you approved it,
+because only your own PRs were watched. The same GitHub query also searches "is:pr is:open reviewed-by:<author>
+org:<each org>" (alias a0, first 50, no extra call). A PR gets the line "<ID> #<n> <repo>: approved <N>d ago, not
+merged · behind|conflicting|blocked|clean" (no id: it starts with "#<n>"), "source": "auto", the CI verdict
+(newest-run rule) as the line's pill, when: it is open and not a draft, your NEWEST opinionated review on it (APPROVED,
+CHANGES_REQUESTED or DISMISSED; comments do not count) is APPROVED, and that approval is at least
+`github.approved_after_h` hours old (judged at serve time, so the saved copy ages correctly; 0 turns the line off and
+leaves the search out of the query). Never written to the notes file; a current hand W line naming the same repo#n or
+ticket wins; no line when GitHub has not answered (the last good answer, up to 24 h, is used with its age like the PR
+lists).
 """
 import json
 import os
@@ -54,6 +65,7 @@ from datetime import datetime, timedelta
 
 import checks
 import config
+import derive
 import tasks
 
 TZ = tasks.TZ
@@ -180,9 +192,23 @@ GH_TIMEOUT_S = 30
 MAX_OUT = 16 * 1024 * 1024        # the check runs of up to 100 PRs (checks.ROLLUP)
 _PR_FIELDS = ("... on PullRequest { number title isDraft reviewDecision repository { name nameWithOwner } "
               "commits(last: 1) { nodes { commit { " + checks.ROLLUP + " } } } }")
+# Source D: open PRs you have reviewed, whoever wrote them, in the same query (alias "a0"): your own reviews (state,
+# time), the merge state and the newest-run CI of the last commit. Bodies are read only for ticket ids. With author
+# "@me" the reviews are not filtered in the query (GraphQL wants a login there): the viewer's login is asked for too
+# and the reviews are filtered here.
+APPROVED_AFTER_S = float(_G.get("approved_after_h", 48)) * 3600
+_ME = AUTHOR == "@me"
+_REVIEWS = ("reviews(last: 100) { nodes { state submittedAt author { login } } }" if _ME
+            else 'reviews(author: "%s", last: 50) { nodes { state submittedAt author { login } } }' % AUTHOR)
+_APPROVED_FIELDS = ("... on PullRequest { number title body headRefName isDraft state mergeable mergeStateStatus "
+                    "repository { name nameWithOwner } " + _REVIEWS + " "
+                    "commits(last: 1) { nodes { commit { " + checks.ROLLUP + " } } } }")
+APPROVED_SEARCH = "is:pr is:open reviewed-by:%s %s" % (AUTHOR, " ".join("org:" + o for o in ORGS))
 QUERY = "query { " + " ".join(
     '%s: search(query: "is:pr is:open draft:false author:%s org:%s", type: ISSUE, first: 50) { nodes { %s } }'
-    % ("o%d" % i, AUTHOR, org, _PR_FIELDS) for i, org in enumerate(ORGS)) + " }"
+    % ("o%d" % i, AUTHOR, org, _PR_FIELDS) for i, org in enumerate(ORGS)) + (
+    (' a0: search(query: "%s", type: ISSUE, first: 50) { nodes { %s } }' % (APPROVED_SEARCH, _APPROVED_FIELDS)
+     + (" viewer { login }" if _ME else "")) if APPROVED_AFTER_S > 0 and ORGS else "") + " }"
 REVIEW = {"APPROVED": "approved", "CHANGES_REQUESTED": "changes requested", "REVIEW_REQUIRED": "review required"}
 _REPO = re.compile(r"^[A-Za-z0-9_.-]{1,100}$")
 _OWNER_REPO = re.compile(r"^(?:%s)/[A-Za-z0-9_.-]{1,100}$" % "|".join(re.escape(o) for o in ORGS))
@@ -218,6 +244,70 @@ def parse_prs(doc):
     return prs
 
 
+MERGE_STATE = {"BEHIND": "behind", "DIRTY": "conflicting", "CLEAN": "clean", "HAS_HOOKS": "clean",
+               "UNSTABLE": "clean", "BLOCKED": "blocked"}
+OPINION = {"APPROVED", "CHANGES_REQUESTED", "DISMISSED"}     # a COMMENTED or pending review changes nothing
+
+
+def _latest_opinion(reviews, who=None):
+    """Your reviews on a PR -> (state, epoch) of your newest APPROVED / CHANGES_REQUESTED / DISMISSED one, or None.
+    `who`: your login, when the query could not filter by author (a review by anyone else is skipped)."""
+    best = None
+    for r in (reviews or {}).get("nodes") or []:
+        if not isinstance(r, dict) or r.get("state") not in OPINION:
+            continue
+        login = ((r.get("author") or {}).get("login") or "") if isinstance(r.get("author"), dict) else ""
+        if who is not None and login.lower() != who.lower():
+            continue
+        at = derive._epoch(r.get("submittedAt"))
+        if at is not None and (best is None or at >= best[1]):
+            best = (r["state"], at)
+    return best
+
+
+def parse_approved(doc):
+    """gh's JSON -> the open, non-draft PRs whose newest review by you is APPROVED:
+    [{"repo", "owner_repo", "number", "title", "ids", "approved_at", "merge", "ci"}], or None when the answer has no
+    usable "a0" part (unknown: no lines). Malformed nodes are dropped. Never raises."""
+    try:
+        nodes = doc["data"]["a0"]["nodes"]
+        if not isinstance(nodes, list):
+            return None
+        who = None
+        if _ME:
+            who = doc["data"]["viewer"]["login"]
+            if not isinstance(who, str) or not who:
+                return None
+    except (KeyError, TypeError):
+        return None
+    out, seen = [], set()
+    for node in nodes:
+        try:
+            repo, full = node["repository"]["name"], node["repository"]["nameWithOwner"]
+            num, title = node["number"], node["title"]
+            if (node.get("isDraft") is not False or node.get("state") != "OPEN" or not isinstance(num, int)
+                    or isinstance(num, bool) or not isinstance(title, str) or not isinstance(repo, str)
+                    or not _REPO.match(repo) or not isinstance(full, str) or not _OWNER_REPO.match(full)
+                    or (full, num) in seen):
+                continue
+            latest = _latest_opinion(node.get("reviews"), who)
+            if not latest or latest[0] != "APPROVED":
+                continue
+            seen.add((full, num))
+            ids = tasks.ticket_ids(title)
+            ids |= derive.body_ids(node.get("body") if isinstance(node.get("body"), str) else "")
+            ids |= derive.branch_ids(node.get("headRefName") if isinstance(node.get("headRefName"), str) else "")
+            merge = MERGE_STATE.get(node.get("mergeStateStatus"), "")
+            if node.get("mergeable") == "CONFLICTING":
+                merge = "conflicting"
+            out.append({"repo": repo, "owner_repo": full.lower(), "number": num, "title": clean(title[:500], 80),
+                        "ids": sorted(ids, key=tasks._id_sort), "approved_at": latest[1], "merge": merge,
+                        "ci": checks.judge_commits(node.get("commits"))})
+        except (KeyError, TypeError, AttributeError):
+            continue
+    return out
+
+
 class GitHub:
     """Your open PRs, cached in memory. `maybe_refresh()` (non-blocking) starts a background fetch when the last
     attempt is 5 minutes old; `snapshot()` gives what may be used now."""
@@ -230,7 +320,7 @@ class GitHub:
         self._running = False
         self._attempt = None
         self._logged = None
-        self._good = None                       # {"at", "wall", "prs"}
+        self._good = None                       # {"at", "wall", "prs", "approved": list or None (unknown)}
         self._ok = None                         # did the last attempt succeed (None: none finished yet)
         self._load_saved()
 
@@ -244,14 +334,17 @@ class GitHub:
             wall, prs = float(doc["wall"]), [p for p in doc["prs"] if isinstance(p, dict)]
         except (KeyError, TypeError, ValueError):
             return
+        approved = doc.get("approved")
+        approved = [p for p in approved if isinstance(p, dict)] if isinstance(approved, list) else None
         age = self.wall() - wall
         if 0 <= age < GOOD_FOR_S:
-            self._good = {"at": self.clock() - age, "wall": wall, "prs": prs}
+            self._good = {"at": self.clock() - age, "wall": wall, "prs": prs, "approved": approved}
 
     def _save(self):
         if self.cache_file and self._good:
             import diskcache
-            diskcache.save(self.cache_file, {"v": 1, "wall": self._good["wall"], "prs": self._good["prs"]})
+            diskcache.save(self.cache_file, {"v": 1, "wall": self._good["wall"], "prs": self._good["prs"],
+                                             "approved": self._good.get("approved")})
 
     def _note(self, line):
         now = self.clock()
@@ -269,9 +362,11 @@ class GitHub:
                 raise RuntimeError("exit %s" % code if isinstance(code, int) else "exit")
             if not isinstance(out, str) or len(out) > MAX_OUT:
                 raise ValueError("bad output")
-            prs = parse_prs(json.loads(out))
+            doc = json.loads(out)
+            prs = parse_prs(doc)
+            approved = parse_approved(doc)
             with self._lock:
-                self._good = {"at": self.clock(), "wall": self.wall(), "prs": prs}
+                self._good = {"at": self.clock(), "wall": self.wall(), "prs": prs, "approved": approved}
                 self._ok = True
             self._save()
         except Exception as e:
@@ -295,7 +390,8 @@ class GitHub:
         threading.Thread(target=go, name="github-fetch", daemon=True).start()
 
     def snapshot(self):
-        """{"prs": [...], "status": "ok"|"stale"|"off"|"pending", "at": wall clock of the good result or None}."""
+        """{"prs": [...], "approved": [...] or None (not known), "status": "ok"|"stale"|"off"|"pending",
+        "at": wall clock of the good result or None}."""
         now = self.clock()
         with self._lock:
             good = self._good if self._good and now - self._good["at"] < GOOD_FOR_S else None
@@ -307,8 +403,10 @@ class GitHub:
                 status = "pending"
             else:
                 status = "off"
-            return {"prs": [dict(p) for p in good["prs"]] if good else [], "status": status,
-                    "at": int(good["wall"]) if good else None}
+            approved = good.get("approved") if good else None
+            return {"prs": [dict(p) for p in good["prs"]] if good else [],
+                    "approved": [dict(p) for p in approved] if isinstance(approved, list) else None,
+                    "status": status, "at": int(good["wall"]) if good else None}
 
 
 # --- the automatic waiting line --------------------------------------------------------------------
@@ -384,6 +482,59 @@ def auto_waiting(linear, prs, hand_w=()):
                 if "merged" in states and states <= {"merged", "closed"}:
                     out.append({"text": auto_line(ident, issue.get("title")), "source": "auto", "id": ident})
         return sorted(out, key=lambda w: tasks._id_sort(w["id"]))
+    except Exception:
+        return []
+
+
+# --- approved by you, not merged -------------------------------------------------------------------------------------
+APPROVED_TEXT = "approved %dd ago, not merged"
+
+
+def approved_line(p, now):
+    """"<TICKET> #<n> <repo>: approved <N>d ago, not merged · <merge state>" (+ the title when there is room)."""
+    lead = (p["ids"][0] + " ") if p.get("ids") else ""
+    text = "%s#%d %s: %s" % (lead, p["number"], p["repo"], APPROVED_TEXT % int((now - p["approved_at"]) // 86400))
+    if p.get("merge"):
+        text += " · " + p["merge"]
+    room = TEXT_MAX - len(text) - 3
+    title = clean(p.get("title") or "", 500)
+    if title and room >= AUTO_TITLE_MIN:
+        text += " · " + tasks._cut(title, room)
+    return clean(text)
+
+
+def auto_approved(gh, hand_w=(), prefixes=None, now=None):
+    """A GitHub snapshot (GitHub.snapshot) + the current block's hand W texts -> [{"text", "source": "auto", "id",
+    "ci"}], one per open PR (any author) whose newest review by you is APPROVED and older than APPROVED_AFTER_S,
+    oldest approval first. Ticket ids come from the title, the body (derive.body_ids) and the branch, kept only when
+    their prefix is a work team key (when those are known); the first one leads the line so tasks.apply_flight
+    attaches it. Your own PRs are left out (they have their own lines). A hand W line naming the same repo#n or one
+    of its ids wins. Fails closed: [] when GitHub has not answered or the answer did not include the approved search.
+    Never written anywhere. Never raises."""
+    try:
+        if APPROVED_AFTER_S <= 0:
+            return []
+        if not gh or gh.get("status") not in ("ok", "stale") or not isinstance(gh.get("approved"), list):
+            return []
+        now = time.time() if now is None else now
+        hand_ids, hand_refs = set(), set()
+        for text in hand_w or ():
+            hand_ids |= tasks.ticket_ids(text)
+            for m in _REF.finditer(tasks._clean(text)):
+                hand_refs.add((m.group(1) + "#" + m.group(2)).lower())
+        mine = {(p.get("repo", "") + "#" + str(p.get("number"))).lower() for p in gh.get("prs") or []}
+        prefixes = set(prefixes or ())
+        out = []
+        for p in sorted(gh["approved"], key=lambda x: x.get("approved_at") or 0):
+            if not isinstance(p.get("approved_at"), (int, float)) or now - p["approved_at"] < APPROVED_AFTER_S:
+                continue
+            ref = (str(p.get("repo")) + "#" + str(p.get("number"))).lower()
+            ids = [i for i in p.get("ids") or [] if not prefixes or i.split("-")[0] in prefixes]
+            if ref in hand_refs or ref in mine or set(ids) & hand_ids:
+                continue
+            out.append({"text": approved_line(dict(p, ids=ids), now), "source": "auto",
+                        "id": ids[0] if ids else ref, "ci": p.get("ci") or "none"})
+        return out
     except Exception:
         return []
 
@@ -545,6 +696,20 @@ class Source:
         except Exception:
             return []
 
+    def _approved(self, block, gh):
+        """The approved-not-merged lines (auto_approved) from the GitHub snapshot already taken. Never raises."""
+        try:
+            prefixes = None
+            if self.prefixes is not None:
+                try:
+                    prefixes = self.prefixes() or None
+                except Exception:
+                    prefixes = None
+            hand_w = block.get("w_all") if block.get("state") == "ok" else []
+            return auto_approved(gh, hand_w, prefixes, self.now().timestamp())
+        except Exception:
+            return []
+
     def flight(self):
         """The hand block merged with the harness's agents: what the task list's flags and state lines are joined
         with (tasks.apply_flight, tasks.derive_states). Never raises."""
@@ -561,7 +726,7 @@ class Source:
                     gh = self.github.snapshot()
                 except Exception:
                     pass
-            auto = self._auto(block)
+            auto = self._auto(block) + self._approved(block, gh)
             try:
                 groups = merge(block, gh, auto)
             except Exception:

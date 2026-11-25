@@ -53,6 +53,9 @@ DEFAULTS = {
         # whose PRs: a login, or "@me" (the gh login itself)
         "author": "@me",
         "orgs": [],
+        # open PRs anyone wrote that you approved get a Waiting on you line once the approval is this many hours old
+        # and the PR is still not merged (0 = off, and the search leaves the query)
+        "approved_after_h": 48,
     },
     "status": {
         # the strip's tiles, in order (see easel.example.toml for every type)
@@ -154,6 +157,9 @@ def check(cfg):
     for org in cfg["github"]["orgs"]:
         if not isinstance(org, str) or not org.replace("-", "").replace("_", "").replace(".", "").isalnum():
             raise ValueError("github.orgs: %r is not an organisation name" % (org,))
+    h = cfg["github"]["approved_after_h"]
+    if isinstance(h, bool) or not isinstance(h, (int, float)) or h < 0:
+        raise ValueError("github.approved_after_h: a number of hours, 0 or more")
     for t in ("work_start", "work_end"):
         hm(cfg["time"][t])
     if len(cfg["scene"]["nodes"]) > 9:

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Waiting on you: an open PR someone else wrote that you approved and that is still unmerged after `github.approved_after_h` hours (48 by default, 0 = off) gets an automatic line with its age, merge state and CI. It comes from the same GitHub query as your open PRs.
+
 ## 0.1.0 (2026-11-23)
 
 First public release.

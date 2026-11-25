@@ -37,7 +37,9 @@ class Settings(unittest.TestCase):
                     '[[linear.workspaces]]\nname = "a"\nkey_cmd = "pass show x"\n',
                     '[[linear.workspaces]]\nkey_cmd = ["x"]\n',
                     '[github]\norgs = ["a b"]\n',
-                    '[time]\nwork_start = "25:00"\n'):
+                    '[time]\nwork_start = "25:00"\n',
+                    '[github]\napproved_after_h = -1\n',
+                    '[github]\napproved_after_h = "2d"\n'):
             with self.assertRaises(ValueError, msg=bad):
                 config.load(write(bad))
 
