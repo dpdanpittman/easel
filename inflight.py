@@ -52,7 +52,8 @@ CHANGES_REQUESTED or DISMISSED; comments do not count) is APPROVED, and that app
 `github.approved_after_h` hours old (judged at serve time, so the saved copy ages correctly; 0 turns the line off and
 leaves the search out of the query). Never written to the notes file; a current hand W line naming the same repo#n or
 ticket wins; no line when GitHub has not answered (the last good answer, up to 24 h, is used with its age like the PR
-lists).
+lists). A PR you approved that someone else drives can be muted (`github.approved_mute_file`, one "repo#n" per line):
+it leaves Waiting on you and shows under Open PRs as "watching" (`watching_prs`) until it merges or closes.
 """
 import json
 import os
@@ -503,13 +504,41 @@ def approved_line(p, now):
     return clean(text)
 
 
-def auto_approved(gh, hand_w=(), prefixes=None, now=None):
+_MUTE_REF = re.compile(r"^(?:[A-Za-z0-9_.-]+/)?([A-Za-z0-9_.-]{1,100})#(\d+)$")
+
+
+def approved_mute(path=None):
+    """The muted "repo#n" refs from `github.approved_mute_file`: PRs you approved that someone else drives, kept off
+    Waiting on you. One ref per line ("repo#12" or "owner/repo#12"), "#" starts a comment at the start of a line or
+    after a space. Missing or unreadable file -> empty set. Never raises."""
+    try:
+        path = os.path.expanduser(path or config.get()["github"]["approved_mute_file"] or "")
+        if not path:
+            return set()
+        refs = set()
+        with open(path, encoding="utf-8") as f:
+            for line in f:
+                line = re.split(r"(?:^|\s)#(?!\d)", line, maxsplit=1)[0].strip()
+                m = _MUTE_REF.match(line)
+                if m:
+                    refs.add((m.group(1) + "#" + m.group(2)).lower())
+        return refs
+    except Exception:
+        return set()
+
+
+def _muted(mute):
+    return approved_mute() if mute is None else {str(m).split("/")[-1].lower() for m in mute}
+
+
+def auto_approved(gh, hand_w=(), prefixes=None, now=None, mute=None):
     """A GitHub snapshot (GitHub.snapshot) + the current block's hand W texts -> [{"text", "source": "auto", "id",
     "ci"}], one per open PR (any author) whose newest review by you is APPROVED and older than APPROVED_AFTER_S,
     oldest approval first. Ticket ids come from the title, the body (derive.body_ids) and the branch, kept only when
     their prefix is a work team key (when those are known); the first one leads the line so tasks.apply_flight
-    attaches it. Your own PRs are left out (they have their own lines). A hand W line naming the same repo#n or one
-    of its ids wins. Fails closed: [] when GitHub has not answered or the answer did not include the approved search.
+    attaches it. Your own PRs are left out (they have their own lines), and so are the muted ones (approved_mute;
+    `mute` overrides the file, for tests): watching_prs shows those. A hand W line naming the same repo#n or one of
+    its ids wins. Fails closed: [] when GitHub has not answered or the answer did not include the approved search.
     Never written anywhere. Never raises."""
     try:
         if APPROVED_AFTER_S <= 0:
@@ -524,13 +553,14 @@ def auto_approved(gh, hand_w=(), prefixes=None, now=None):
                 hand_refs.add((m.group(1) + "#" + m.group(2)).lower())
         mine = {(p.get("repo", "") + "#" + str(p.get("number"))).lower() for p in gh.get("prs") or []}
         prefixes = set(prefixes or ())
+        muted = _muted(mute)
         out = []
         for p in sorted(gh["approved"], key=lambda x: x.get("approved_at") or 0):
             if not isinstance(p.get("approved_at"), (int, float)) or now - p["approved_at"] < APPROVED_AFTER_S:
                 continue
             ref = (str(p.get("repo")) + "#" + str(p.get("number"))).lower()
             ids = [i for i in p.get("ids") or [] if not prefixes or i.split("-")[0] in prefixes]
-            if ref in hand_refs or ref in mine or set(ids) & hand_ids:
+            if ref in hand_refs or ref in mine or set(ids) & hand_ids or ref in muted:
                 continue
             out.append({"text": approved_line(dict(p, ids=ids), now), "source": "auto",
                         "id": ids[0] if ids else ref, "ci": p.get("ci") or "none"})
@@ -539,10 +569,31 @@ def auto_approved(gh, hand_w=(), prefixes=None, now=None):
         return []
 
 
+def watching_prs(gh, mute=None):
+    """Muted approved PRs (approved_mute) -> Open PRs entries marked "watching": someone else's PR you approved, kept
+    in sight without asking anything of you. Any age; it drops off by itself when the PR merges or closes (the
+    approved search only holds open PRs). Never raises."""
+    try:
+        if not gh or not isinstance(gh.get("approved"), list):
+            return []
+        muted = _muted(mute)
+        out = []
+        for p in gh["approved"]:
+            ref = (str(p.get("repo")) + "#" + str(p.get("number"))).lower()
+            if ref in muted:
+                out.append({"repo": p.get("repo"), "number": p.get("number"), "title": p.get("title") or "",
+                            "ci": p.get("ci") or "none", "review": "", "watching": True,
+                            "merge": p.get("merge") or ""})
+        return out
+    except Exception:
+        return []
+
+
 # --- the merge ------------------------------------------------------------------------------------------------------
-def merge(block, gh, auto=()):
-    """The parsed block + a GitHub snapshot (+ the automatic waiting lines) -> the API payload's groups. Order in
-    Waiting on you: the hand W lines, the automatic lines, then the green PRs."""
+def merge(block, gh, auto=(), watching=()):
+    """The parsed block + a GitHub snapshot (+ the automatic waiting lines, + the watched PRs) -> the API payload's
+    groups. Order in Waiting on you: the hand W lines, the automatic lines, then the green PRs. Open PRs: your other
+    PRs, then the watched ones."""
     waiting = [dict(w) for w in block["waiting"]] + [dict(w) for w in auto or ()]
     by_ref = {w["ref"]: w for w in waiting if w.get("ref")}
     prs_out = []
@@ -557,6 +608,7 @@ def merge(block, gh, auto=()):
                             "source": "github", "ref": ref, **mark})
         else:
             prs_out.append({"repo": p["repo"], "number": p["number"], "title": p["title"], **mark})
+    prs_out += [dict(w) for w in watching or ()]
     for w in waiting:
         w.pop("ref", None)
     # the real counts: W lines past the cap still count
@@ -728,7 +780,7 @@ class Source:
                     pass
             auto = self._auto(block) + self._approved(block, gh)
             try:
-                groups = merge(block, gh, auto)
+                groups = merge(block, gh, auto, watching_prs(gh))
             except Exception:
                 groups = merge(block, {"prs": []}, auto)
             return dict(groups, notes=block["state"], block_at=block["at"], github=gh["status"],

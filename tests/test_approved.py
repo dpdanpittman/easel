@@ -50,8 +50,50 @@ def snap(*nodes, status="ok", own=()):
     return {"prs": list(own), "approved": inflight.parse_approved(doc(*nodes)), "status": status, "at": int(NOW)}
 
 
-def lines(gh, hand=(), prefixes=("ACME", "OPS")):
-    return inflight.auto_approved(gh, hand, set(prefixes), NOW)
+def lines(gh, hand=(), prefixes=("ACME", "OPS"), mute=()):
+    return inflight.auto_approved(gh, hand, set(prefixes), NOW, mute=mute)
+
+
+class Mute(unittest.TestCase):
+    def test_muted_ref_hides_the_line(self):
+        self.assertEqual(lines(snap(node()), mute={"api#88"}), [])
+        self.assertEqual(lines(snap(node()), mute={"acme-inc/api#88"}), [])
+        self.assertEqual(len(lines(snap(node()), mute={"api#9999"})), 1)
+
+    def test_mute_file_parsing(self):
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt") as f:
+            f.write("# comment\n\nAPI#88  # Priya drives it\n  acme-inc/shop#3\nnot a ref\n")
+        try:
+            self.assertEqual(inflight.approved_mute(f.name), {"api#88", "shop#3"})
+        finally:
+            os.unlink(f.name)
+        self.assertEqual(inflight.approved_mute("/nonexistent/mute.txt"), set())
+
+    def test_the_settings_file_is_used_and_tests_never_read_a_real_one(self):
+        self.assertTrue(inflight.config.get()["github"]["approved_mute_file"].startswith("/nonexistent-easel-test"))
+        self.assertEqual(inflight.approved_mute(), set())
+        self.assertEqual(len(inflight.auto_approved(snap(node()), (), {"ACME"}, NOW)), 1)
+
+
+class Watching(unittest.TestCase):
+    def test_muted_pr_shows_in_open_prs_as_watching(self):
+        gh = snap(node())
+        w = inflight.watching_prs(gh, mute={"api#88"})
+        self.assertEqual(len(w), 1)
+        self.assertTrue(w[0]["watching"])
+        self.assertEqual((w[0]["repo"], w[0]["number"], w[0]["ci"]), ("api", 88, "passing"))
+        self.assertEqual(inflight.watching_prs(gh, mute=set()), [])
+        self.assertEqual(inflight.watching_prs({"approved": None}, mute={"api#88"}), [])
+
+    def test_merge_puts_watching_after_own_prs_and_counts_it(self):
+        block = {"waiting": [], "running": [], "finished": [], "counts": {}}
+        gh = {"prs": [{"repo": "x", "number": 1, "title": "mine", "ci": "failing", "review": ""}]}
+        w = inflight.watching_prs(snap(node()), mute={"api#88"})
+        out = inflight.merge(block, gh, (), w)
+        self.assertEqual([p["number"] for p in out["prs"]], [1, 88])
+        self.assertTrue(out["prs"][1]["watching"])
+        self.assertEqual(out["counts"]["prs"], 2)
+        self.assertEqual(out["waiting"], [])
 
 
 class Rule(unittest.TestCase):

@@ -29,6 +29,7 @@ key_cmd = ["easel-test-key", "acme"]
 [github]
 author = "octocat"
 orgs = ["globex-labs", "acme-inc"]
+approved_mute_file = "/nonexistent-easel-test/approved-mute.txt"
 
 [agents]
 fallback_prefixes = ["OPS", "WEB", "ACME"]

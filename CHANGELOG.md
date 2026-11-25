@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Waiting on you: an open PR someone else wrote that you approved and that is still unmerged after `github.approved_after_h` hours (48 by default, 0 = off) gets an automatic line with its age, merge state and CI. It comes from the same GitHub query as your open PRs.
+- A mute list for that line (`github.approved_mute_file`, default `~/.config/easel/approved-mute.txt`, one `repo#n` per line): a muted PR leaves Waiting on you and shows under Open PRs as "watching" (violet, eye mark).
 
 ## 0.1.0 (2026-11-23)
 

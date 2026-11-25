@@ -56,6 +56,9 @@ DEFAULTS = {
         # open PRs anyone wrote that you approved get a Waiting on you line once the approval is this many hours old
         # and the PR is still not merged (0 = off, and the search leaves the query)
         "approved_after_h": 48,
+        # "repo#n" lines: PRs you approved that someone else drives; they show under Open PRs as "watching" instead
+        # of in Waiting on you (a missing file mutes nothing)
+        "approved_mute_file": "~/.config/easel/approved-mute.txt",
     },
     "status": {
         # the strip's tiles, in order (see easel.example.toml for every type)

@@ -846,6 +846,12 @@
       ref.textContent = it.repo + "#" + it.number;
       frag.appendChild(ref);
       frag.appendChild(document.createTextNode(it.title));
+      if (it.watching) {
+        // someone else's PR you approved and muted (inflight.watching_prs): in sight, asking nothing, its own colour
+        var r = row("\u{1F441}", frag, "", [pill("watching", "watch"), ciPill(it.ci)]);
+        if (r && r.classList) r.classList.add("watching");
+        return r;
+      }
       return row("·", frag, "", [ciPill(it.ci), it.review ? pill(it.review, "") : null]);
     }, c.prs);
     var sub = "";

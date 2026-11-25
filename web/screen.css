@@ -1050,6 +1050,20 @@ body.work .fwait .fi .ft {
 .fprs .fi .ft {
   font-weight: 500;
 }
+/* watching: someone else's PR you approved and muted; its own quiet violet, never amber/green/red, so it reads as
+   "in sight, nothing for you to do" next to your own PRs */
+.fprs .fi.watching {
+  color: #b9a7e6;
+  font-style: italic;
+}
+.fprs .fi.watching .fm {
+  font-style: normal;
+}
+.fi .fx.watch {
+  color: #b9a7e6;
+  border-color: rgba(185, 167, 230, 0.5);
+  font-style: normal;
+}
 .fref {
   color: var(--info);
   margin-right: 10px;
