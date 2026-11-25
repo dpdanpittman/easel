@@ -48,6 +48,15 @@ approved_after_h = 48
 # PRs you approved that someone else drives: one "repo#n" (or "owner/repo#n") per line, "#" comments allowed. They
 # leave Waiting on you and show under Open PRs as "watching" until they merge or close. A missing file mutes nothing.
 approved_mute_file = "~/.config/easel/approved-mute.txt"
+# A green PR of yours is "merge it" (Waiting on you) only when its review is done: it does not conflict with its base
+# branch ("conflicts with main") and has no unresolved review thread ("2 open threads"). Optionally an automated
+# reviewer too, off while review_bot is empty: review_bot is a pattern matched against the reviewer's login (case
+# ignored). Once that reviewer has reviewed a PR, its newest review of the head commit must exist ("review pending")
+# and, when review_score is set (a pattern whose first group is the score in the review text), score at least
+# review_score_min ("review 2, needs 5"). A PR that reviewer never looked at is judged without it.
+review_bot = ""                 # e.g. '^review-bot' (a TOML literal string keeps backslashes as written)
+review_score = ""               # e.g. 'Score:\s*([0-9]+)\s*/\s*5'
+review_score_min = 5
 
 [status]
 # The strip's tiles, in order. Types:

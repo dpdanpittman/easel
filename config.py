@@ -16,6 +16,7 @@ anything (tests/_env.py).
 """
 import copy
 import os
+import re
 import tomllib
 
 DEFAULTS = {
@@ -59,6 +60,14 @@ DEFAULTS = {
         # "repo#n" lines: PRs you approved that someone else drives; they show under Open PRs as "watching" instead
         # of in Waiting on you (a missing file mutes nothing)
         "approved_mute_file": "~/.config/easel/approved-mute.txt",
+        # A green PR of yours is "merge it" only when its review is done: no conflict with its base branch and no
+        # unresolved review thread, always. Optionally a review bot too (off while review_bot is ""): a pattern
+        # matched against the reviewer's login; once that bot has reviewed a PR, its newest review of the head commit
+        # must exist and, when review_score is set (a pattern whose first group is the score), score at least
+        # review_score_min.
+        "review_bot": "",
+        "review_score": "",
+        "review_score_min": 5,
     },
     "status": {
         # the strip's tiles, in order (see easel.example.toml for every type)
@@ -163,6 +172,20 @@ def check(cfg):
     h = cfg["github"]["approved_after_h"]
     if isinstance(h, bool) or not isinstance(h, (int, float)) or h < 0:
         raise ValueError("github.approved_after_h: a number of hours, 0 or more")
+    g = cfg["github"]
+    for k in ("review_bot", "review_score"):
+        if not isinstance(g[k], str):
+            raise ValueError("github.%s: a pattern (a string)" % k)
+        try:
+            pat = re.compile(g[k])
+        except re.error as e:
+            raise ValueError("github.%s: not a valid pattern (%s)" % (k, e))
+        if k == "review_score" and g[k] and pat.groups < 1:
+            raise ValueError("github.review_score: the pattern needs a group around the score")
+    if g["review_score"] and not g["review_bot"]:
+        raise ValueError("github.review_score needs github.review_bot (whose reviews carry the score)")
+    if isinstance(g["review_score_min"], bool) or not isinstance(g["review_score_min"], int):
+        raise ValueError("github.review_score_min: a whole number")
     for t in ("work_start", "work_end"):
         hm(cfg["time"][t])
     if len(cfg["scene"]["nodes"]) > 9:

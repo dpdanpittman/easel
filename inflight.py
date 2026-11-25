@@ -5,7 +5,9 @@ only when the remote chooses the "inflight" panel. Outside those hours `payload`
 in it, the notes file and GitHub not even read) and the easel shows its off-hours view in this spot. Four groups:
 
   waiting   things only you can do (notes "W." lines, plus your open non-draft PRs whose checks all pass, judged
-            by the newest-run rule of checks.py: a superseded cancelled run does not count)
+            by the newest-run rule of checks.py: a superseded cancelled run does not count, and whose review is
+            done: no conflict with the base branch, no open review thread, the review bot passed if one is
+            configured; see review_state)
   running   background builds and long jobs the assistant has going (notes "R." lines with a start time, and the
             agents the hook recorded, agents.py)
   finished  the last few things that landed (notes "F." lines, newest first, at most 6)
@@ -191,8 +193,66 @@ GOOD_FOR_S = 24 * 3600           # the last good result (memory, and on disk acr
 LOG_EVERY_S = 3600
 GH_TIMEOUT_S = 30
 MAX_OUT = 16 * 1024 * 1024        # the check runs of up to 100 PRs (checks.ROLLUP)
-_PR_FIELDS = ("... on PullRequest { number title isDraft reviewDecision repository { name nameWithOwner } "
-              "commits(last: 1) { nodes { commit { " + checks.ROLLUP + " } } } }")
+# A green PR is "merge it" only when its review is done too (review_state): the head commit, the base branch, whether
+# it conflicts, its review threads and, when a review bot is configured, the newest reviews with their bodies.
+_BOT = re.compile(_G["review_bot"], re.I) if _G.get("review_bot") else None
+_SCORE = re.compile(_G["review_score"]) if _G.get("review_score") else None
+SCORE_MIN = int(_G.get("review_score_min", 5))
+_PR_FIELDS = ("... on PullRequest { number title isDraft reviewDecision headRefOid baseRefName mergeable "
+              "repository { name nameWithOwner } reviewThreads(first: 100) { nodes { isResolved } } "
+              + ("reviews(last: 30) { nodes { author { login } commit { oid } body } } " if _BOT else "")
+              + "commits(last: 1) { nodes { commit { " + checks.ROLLUP + " } } } }")
+
+
+def review_rule():
+    """(bot login pattern or None, score pattern or None, required score) from settings `github`."""
+    return _BOT, _SCORE, SCORE_MIN
+
+
+def review_state(node, rule=None):
+    """(ready, note) for one of your PRs, from untrusted GitHub fields; never raises. The note is the pill text for
+    the Open PRs line. Not ready, in this order, when:
+      - it conflicts with its base branch ("conflicts with main", the PR's own base branch name);
+      - a review bot is configured (`github.review_bot`, a pattern matched against the reviewer's login), has
+        reviewed this PR, and its newest review of the CURRENT head commit is missing ("review pending") or, when
+        `github.review_score` is set (a pattern whose first group is the score), scores under
+        `github.review_score_min` ("review 2, needs 5"); a PR the bot never reviewed is judged without it;
+      - a review thread is unresolved ("1 open thread").
+    Otherwise ready (green CI then makes it "merge it")."""
+    try:
+        bot, score_re, need = rule or review_rule()
+        if node.get("mergeable") == "CONFLICTING":
+            base = node.get("baseRefName")
+            base = clean(base, 40) if isinstance(base, str) and base.strip() else "the base branch"
+            return False, "conflicts with " + base
+        if bot is not None:
+            head = node.get("headRefOid")
+            seen, done, score = False, False, None
+            for r in (node.get("reviews") or {}).get("nodes") or []:     # oldest first: the newest one wins
+                if not isinstance(r, dict):
+                    continue
+                login = (r.get("author") or {}).get("login") or ""
+                if not isinstance(login, str) or not bot.search(login):
+                    continue
+                seen = True
+                if isinstance(head, str) and head and (r.get("commit") or {}).get("oid") == head:
+                    if score_re is None:
+                        done = True
+                    else:
+                        m = score_re.search(r.get("body") or "")
+                        if m:
+                            done, score = True, int(m.group(1))
+            if seen and not done:
+                return False, "review pending"
+            if seen and score is not None and score < need:
+                return False, "review %d, needs %d" % (score, need)
+        threads = (node.get("reviewThreads") or {}).get("nodes") or []
+        open_threads = sum(1 for t in threads if isinstance(t, dict) and t.get("isResolved") is False)
+        if open_threads:
+            return False, "%d open thread%s" % (open_threads, "" if open_threads == 1 else "s")
+        return True, ""
+    except Exception:
+        return True, ""
 # Source D: open PRs you have reviewed, whoever wrote them, in the same query (alias "a0"): your own reviews (state,
 # time), the merge state and the newest-run CI of the last commit. Bodies are read only for ticket ids. With author
 # "@me" the reviews are not filtered in the query (GraphQL wants a login there): the viewer's login is asked for too
@@ -222,7 +282,7 @@ def gh_run(args, timeout):
 
 
 def parse_prs(doc):
-    """gh's JSON -> [{"repo", "owner_repo", "number", "title", "ci", "review"}]. Raises on a bad shape.
+    """gh's JSON -> [{"repo", "owner_repo", "number", "title", "ci", "review", "ready"}]. Raises on a bad shape.
     Everything is untrusted: only well-formed fields are kept."""
     if not isinstance(doc, dict) or doc.get("errors") or not isinstance(doc.get("data"), dict):
         raise ValueError("graphql errors")
@@ -237,9 +297,10 @@ def parse_prs(doc):
                         or not isinstance(full, str) or not _OWNER_REPO.match(full) or (full, num) in seen):
                     continue
                 seen.add((full, num))
+                ready, note = review_state(node)
                 prs.append({"repo": repo, "owner_repo": full, "number": num, "title": clean(title[:500], 80),
                             "ci": checks.judge_commits(node.get("commits")),
-                            "review": REVIEW.get(node.get("reviewDecision"), "")})
+                            "review": note or REVIEW.get(node.get("reviewDecision"), ""), "ready": ready})
             except (KeyError, TypeError, AttributeError):
                 continue
     return prs
@@ -603,7 +664,7 @@ def merge(block, gh, auto=(), watching=()):
         if ref in by_ref:                        # the notes names it: show it once, with the PR's marks
             by_ref[ref].update(mark)
             continue
-        if p["ci"] == "passing":
+        if p["ci"] == "passing" and p.get("ready", True):
             waiting.append({"text": clean("merge %s#%d: %s" % (p["repo"], p["number"], p["title"])),
                             "source": "github", "ref": ref, **mark})
         else:

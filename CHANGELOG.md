@@ -6,6 +6,7 @@
 - A mute list for that line (`github.approved_mute_file`, default `~/.config/easel/approved-mute.txt`, one `repo#n` per line): a muted PR leaves Waiting on you and shows under Open PRs as "watching" (violet, eye mark).
 - In flight groups that do not fit rotate like a conveyor: the top row slides up and rejoins at the bottom, and the rotation survives data refreshes. The work task list moves as before.
 - In flight keeps at least 4 Waiting on you rows in view (was 3); the task list gives up a row first.
+- A green PR is "merge it" only when its review is done: never while it conflicts with its base branch ("conflicts with main", the PR's real base name) or has an unresolved review thread. An automated reviewer can be required too (`github.review_bot`, `github.review_score`, `github.review_score_min`; off by default): its newest review of the head commit must exist and, with a score pattern, reach the required score. A PR that is not ready stays under Open PRs with the reason.
 
 ## 0.1.0 (2026-11-23)
 

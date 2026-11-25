@@ -264,5 +264,88 @@ class SourceWiring(unittest.TestCase):
         self.assertEqual(out["waiting"], [])
 
 
+class ReviewState(unittest.TestCase):
+    """green CI alone is not "merge it": no conflict, no open thread, and the review bot passed when one is set."""
+    import re as _re
+    BOT = (_re.compile(r"^review-bot", _re.I), _re.compile(r"Score:\s*([0-9]+)\s*/\s*5"), 5)
+    OFF = (None, None, 5)
+
+    def node(self, head="aaa", reviews=(), threads=(), mergeable="MERGEABLE", base="main"):
+        return {"headRefOid": head, "baseRefName": base, "mergeable": mergeable,
+                "reviewThreads": {"nodes": [{"isResolved": r} for r in threads]},
+                "reviews": {"nodes": [{"author": {"login": a}, "commit": {"oid": c}, "body": b}
+                                      for a, c, b in reviews]}}
+
+    def test_off_by_default_green_and_no_threads_is_ready(self):
+        self.assertEqual(inflight.review_rule(), (None, None, 5))
+        self.assertEqual(inflight.review_state(self.node()), (True, ""))
+        # a bot's low score means nothing while no bot is configured
+        n = self.node(reviews=[("review-bot", "aaa", "Score: 1/5")])
+        self.assertEqual(inflight.review_state(n, self.OFF), (True, ""))
+        self.assertNotIn("reviews(last: 30)", inflight.QUERY)
+        self.assertIn("reviewThreads", inflight.QUERY)
+        self.assertIn("baseRefName", inflight.QUERY)
+
+    def test_no_bot_review_is_ready(self):
+        n = self.node(reviews=[("priya", "aaa", "looks fine")])
+        self.assertEqual(inflight.review_state(n, self.BOT), (True, ""))
+
+    def test_low_score_on_head_is_not_ready(self):
+        n = self.node(reviews=[("review-bot[bot]", "aaa", "### Score: 2/5")])
+        self.assertEqual(inflight.review_state(n, self.BOT), (False, "review 2, needs 5"))
+
+    def test_required_score_on_head_is_ready_and_newest_review_wins(self):
+        n = self.node(reviews=[("Review-Bot", "aaa", "Score: 2/5"), ("Review-Bot", "aaa", "Score: 5/5")])
+        self.assertEqual(inflight.review_state(n, self.BOT), (True, ""))
+        n = self.node(reviews=[("review-bot", "aaa", "Score: 4/5")])
+        self.assertEqual(inflight.review_state(n, (self.BOT[0], self.BOT[1], 4)), (True, ""))
+
+    def test_score_on_an_older_commit_is_pending(self):
+        n = self.node(head="bbb", reviews=[("review-bot", "aaa", "Score: 5/5")])
+        self.assertEqual(inflight.review_state(n, self.BOT), (False, "review pending"))
+
+    def test_bot_without_score_pattern_needs_a_review_of_the_head(self):
+        rule = (self.BOT[0], None, 5)
+        self.assertEqual(inflight.review_state(self.node(reviews=[("review-bot", "aaa", "")]), rule), (True, ""))
+        self.assertEqual(inflight.review_state(self.node(head="bbb", reviews=[("review-bot", "aaa", "")]), rule),
+                         (False, "review pending"))
+
+    def test_open_threads_are_not_ready(self):
+        self.assertEqual(inflight.review_state(self.node(threads=[True, False])), (False, "1 open thread"))
+        self.assertEqual(inflight.review_state(self.node(threads=[False, False])), (False, "2 open threads"))
+
+    def test_conflicting_is_never_ready_and_names_the_base(self):
+        n = self.node(reviews=[("review-bot", "aaa", "Score: 5/5")], mergeable="CONFLICTING")
+        self.assertEqual(inflight.review_state(n, self.BOT), (False, "conflicts with main"))
+        n = self.node(mergeable="CONFLICTING", base="release/2.x")
+        self.assertEqual(inflight.review_state(n), (False, "conflicts with release/2.x"))
+        n = self.node(mergeable="CONFLICTING", base=None)
+        self.assertEqual(inflight.review_state(n), (False, "conflicts with the base branch"))
+
+    def test_bad_shapes_never_raise(self):
+        self.assertEqual(inflight.review_state({"reviews": "x", "reviewThreads": 3}, self.BOT), (True, ""))
+        self.assertEqual(inflight.review_state(None), (True, ""))
+
+    def test_parse_prs_carries_ready_and_the_note(self):
+        own = {"number": 7, "title": "t", "isDraft": False, "reviewDecision": "APPROVED",
+               "repository": {"name": "shop", "nameWithOwner": "acme-inc/shop"}, "mergeable": "CONFLICTING",
+               "baseRefName": "main", "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": "SUCCESS"}}}]}}
+        prs = inflight.parse_prs({"data": {"o0": {"nodes": []}, "o1": {"nodes": [own]}}})
+        self.assertEqual((prs[0]["ready"], prs[0]["review"]), (False, "conflicts with main"))
+        own.update(mergeable="MERGEABLE")
+        prs = inflight.parse_prs({"data": {"o0": {"nodes": []}, "o1": {"nodes": [own]}}})
+        self.assertEqual((prs[0]["ready"], prs[0]["review"]), (True, "approved"))
+
+    def test_merge_keeps_an_unready_green_pr_out_of_waiting(self):
+        block = {"waiting": [], "running": [], "finished": [], "counts": {}}
+        gh = {"prs": [{"repo": "shop", "number": 154, "title": "t", "ci": "passing",
+                       "review": "review 2, needs 5", "ready": False},
+                      {"repo": "shop", "number": 9, "title": "u", "ci": "passing", "review": "", "ready": True},
+                      {"repo": "shop", "number": 3, "title": "v", "ci": "passing", "review": ""}]}
+        out = inflight.merge(block, gh, ())
+        self.assertEqual([w["text"][:14] for w in out["waiting"]], ["merge shop#9: ", "merge shop#3: "])
+        self.assertEqual([(p["number"], p["review"]) for p in out["prs"]], [(154, "review 2, needs 5")])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -56,12 +56,22 @@ One row per open ticket: number, priority (P1 to P3), ticket id, title and a sta
 
 The live answer to "what's waiting on me?". Four groups:
 
-1. **Waiting on you** (amber): W lines from the notes file; your open, non-draft PRs whose checks all pass ("merge shop#91: ...", with the review state); and an automatic line, "ACME-198: PRs merged, close or finish it", for any ticket that is In Review in Linear with at least one linked PR merged and none open; and "#88 api: approved 3d ago, not merged · behind" for an open PR anyone else wrote whose newest review by you (approve, request changes or dismiss; comments do not count) is an approval older than `github.approved_after_h` hours (48 by default, 0 turns it off), with its merge state (behind, conflicting, blocked or clean) and its CI pill. A ticket id from the PR's title, body or branch leads that line, so the task row picks it up. A hand W line for the same ticket or PR wins. A PR you approved that someone else drives can be muted: put `repo#n` on a line of `github.approved_mute_file` (`~/.config/easel/approved-mute.txt` by default; `#` comments allowed) and it moves to Open PRs as "watching".
+1. **Waiting on you** (amber): W lines from the notes file; your open, non-draft PRs whose checks all pass and whose review is done ("merge shop#91: ...", with the review state; see "Ready to merge" below); and an automatic line, "ACME-198: PRs merged, close or finish it", for any ticket that is In Review in Linear with at least one linked PR merged and none open; and "#88 api: approved 3d ago, not merged · behind" for an open PR anyone else wrote whose newest review by you (approve, request changes or dismiss; comments do not count) is an approval older than `github.approved_after_h` hours (48 by default, 0 turns it off), with its merge state (behind, conflicting, blocked or clean) and its CI pill. A ticket id from the PR's title, body or branch leads that line, so the task row picks it up. A hand W line for the same ticket or PR wins. A PR you approved that someone else drives can be muted: put `repo#n` on a line of `github.approved_mute_file` (`~/.config/easel/approved-mute.txt` by default; `#` comments allowed) and it moves to Open PRs as "watching".
 2. **Running now** (green): background agents from the hook record, plus R lines. Each shows how long it has run; an agent silent for 45 minutes shows "no word since HH:MM" instead; after 12 hours of silence it is dropped as a crashed session.
 3. **Just finished** (dimmed): agents finished in the last 18 hours plus F lines, newest first.
 4. **Open PRs** (a quiet line): your other open PRs (checks failing, running or missing), so no PR is lost; then the muted PRs you approved, in violet with an eye mark and a "watching" pill: in sight, asking nothing of you, gone once they merge or close.
 
 The header says when the block was last written, or "not current" when it is older than 18 hours.
+
+### Ready to merge
+
+A green PR of yours goes to Waiting on you as "merge ..." only when its review is done too. Otherwise it stays under Open PRs with the reason as its pill:
+
+- it conflicts with its base branch: "conflicts with main" (the PR's own base branch name);
+- an automated reviewer is configured (`github.review_bot`, a pattern matched against the reviewer's login), has reviewed the PR, and has not yet reviewed the current head commit ("review pending"), or, with `github.review_score` set (a pattern whose first group is the score in the review text), scored it under `github.review_score_min` ("review 2, needs 5"). A PR that reviewer never looked at is judged without it. Off by default;
+- a review thread is unresolved: "1 open thread".
+
+With no reviewer configured, green checks, no open review thread and no conflict make a PR ready.
 
 ### The CI rule
 

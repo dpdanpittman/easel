@@ -39,9 +39,18 @@ class Settings(unittest.TestCase):
                     '[github]\norgs = ["a b"]\n',
                     '[time]\nwork_start = "25:00"\n',
                     '[github]\napproved_after_h = -1\n',
-                    '[github]\napproved_after_h = "2d"\n'):
+                    '[github]\napproved_after_h = "2d"\n',
+                    '[github]\nreview_bot = "("\n',
+                    '[github]\nreview_bot = "bot"\nreview_score = "Score: [0-9]"\n',
+                    '[github]\nreview_score = "Score: ([0-9])"\n',
+                    '[github]\nreview_bot = "bot"\nreview_score_min = "5"\n'):
             with self.assertRaises(ValueError, msg=bad):
                 config.load(write(bad))
+
+    def test_review_bot_settings_load(self):
+        cfg = config.load(write('[github]\nreview_bot = \'^review-bot\'\nreview_score = \'Score:\\s*([0-9]+)/5\'\n'
+                                'review_score_min = 4\n'))
+        self.assertEqual((cfg["github"]["review_bot"], cfg["github"]["review_score_min"]), ("^review-bot", 4))
 
     def test_test_settings_are_in_use(self):
         self.assertEqual(config.get()["branding"]["owner"], "Sam")
