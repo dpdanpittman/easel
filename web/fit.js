@@ -54,7 +54,7 @@
      which takes the rest). Nothing is cut: a list that does not fit moves.
      o = {budget, t, w, r, d (row bottoms), labW, labR, labD, colGap, tGapSlack} ->
      {t, w, r, d (rows shown), tHeight, gapCut, used, fits (every row of every list shown, nothing moves), flightMin}. */
-  var FLIGHT_MIN_ROWS = 3;
+  var FLIGHT_MIN_ROWS = 4; // never fewer than 4 Waiting on you rows visible
   function allocate(o) {
     o = Object.assign({}, o);
     function col2(r, d) {

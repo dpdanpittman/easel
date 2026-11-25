@@ -82,9 +82,9 @@ class Allocate(unittest.TestCase):
         self.assertEqual((k["t"], k["w"], k["r"], k["d"]), (6, 3, 2, 1))
         self.assertFalse(k["fits"])
         self.assertEqual(k["tHeight"], 404)
-        # many waiting lines: waiting shows what fits and moves; the tasks are untouched
+        # many waiting lines: In flight keeps 4 waiting rows, so the task list gives up a row and moves
         k = self.alloc(budget=569, w=BOTTOMS)
-        self.assertEqual((k["t"], k["w"]), (6, 3))
+        self.assertEqual((k["t"], k["w"]), (5, 4))
 
     def test_a_few_pixels_short_tightens_task_gaps_not_rows(self):
         k = self.alloc(budget=565)                 # 4 px short of the minimum
@@ -92,7 +92,7 @@ class Allocate(unittest.TestCase):
         self.assertEqual(k["tHeight"], 399)
 
     def test_last_resort_the_task_list_moves(self):
-        # In flight keeps its minimum (3 waiting rows); the task list shows the whole rows that fit and moves
+        # In flight keeps its minimum (here all 3 waiting rows); the task list shows the whole rows that fit and moves
         k = self.alloc(budget=500)
         self.assertEqual((k["t"], k["w"]), (5, 3))
         self.assertEqual(k["tHeight"], 335)

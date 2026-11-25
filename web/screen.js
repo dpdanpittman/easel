@@ -526,7 +526,7 @@
   /* ---------- Sizing and auto-scroll: nothing is hidden silently, nothing moves for a few pixels. Layout first,
      motion last (rules in fit.js):
      - In work hours the task list comes first in the left column (EaselFit.allocate): it shows all
-       its rows while In flight keeps its minimum (3 waiting rows); In flight takes the rest and each of its groups
+       its rows while In flight keeps its minimum (4 waiting rows); In flight takes the rest and each of its groups
        (Waiting on you, Running now, Just finished) moves through its rows when they do not all fit. The task list
        moves only as the last resort, when even that minimum leaves it too little room.
      - Every box ends on a row boundary. A list moves only when at least ONE WHOLE ROW cannot be shown; less than a
